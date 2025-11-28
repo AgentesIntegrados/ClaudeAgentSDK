@@ -124,8 +124,8 @@ export default function Settings() {
                     className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:border-primary outline-none"
                     data-testid="select-model"
                   >
-                    <option value="claude-sonnet-4-20250514">claude-sonnet-4-20250514 (Mais Novo)</option>
-                    <option value="claude-3-5-sonnet-20240620">claude-3-5-sonnet-20240620</option>
+                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Recomendado)</option>
+                    <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
                     <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                     <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                   </select>

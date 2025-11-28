@@ -61,7 +61,7 @@ async def main():
     # Initialize Agent
     settings = load_settings()
     agent = ClaudeAgent(
-        model="claude-3-5-sonnet-20240620",
+        model="claude-sonnet-4-20250514",
         system_prompt_path="config/system_prompt.md",
         settings=settings
     )

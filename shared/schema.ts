@@ -21,7 +21,7 @@ export type User = typeof users.$inferSelect;
 export const agentConfigs = pgTable("agent_configs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  model: text("model").notNull().default("claude-3-5-sonnet-20240620"),
+  model: text("model").notNull().default("claude-sonnet-4-20250514"),
   systemPrompt: text("system_prompt").notNull(),
   permissionMode: text("permission_mode").notNull().default("allow"),
   maxTurns: integer("max_turns").notNull().default(10),

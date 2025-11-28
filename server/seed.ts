@@ -11,7 +11,7 @@ async function seed() {
       // Cria configuração padrão do agente
       const defaultConfig = await storage.createAgentConfig({
         name: "QualifyBot",
-        model: "claude-3-5-sonnet-20240620",
+        model: "claude-sonnet-4-20250514",
         systemPrompt: `# Role
 Você é um Agente SDR (Sales Development Representative) especialista chamado "QualifyBot".
 
