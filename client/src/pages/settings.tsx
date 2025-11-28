@@ -1,5 +1,5 @@
 import Layout from "@/components/layout";
-import { Save, RotateCcw, Key, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { Save, RotateCcw, Key, Eye, EyeOff, CheckCircle2, Activity, Code2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchDefaultAgentConfig, updateAgentConfig } from "@/lib/api";
 import { useState, useEffect } from "react";
@@ -101,6 +101,53 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
+          {/* Agent Status */}
+          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 flex items-center">
+              <Activity className="w-5 h-5 mr-2 text-primary" />
+              Status do Agente
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                <span className="text-sm text-muted-foreground">Estado</span>
+                <span className="flex items-center text-green-400 bg-green-400/10 px-2 py-1 rounded text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 mr-2 animate-pulse" />
+                  Ativo
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                <span className="text-sm text-muted-foreground">Modelo</span>
+                <span className="font-mono text-xs">{agentConfig?.model || "carregando..."}</span>
+              </div>
+            </div>
+            
+            {/* MCP Tools */}
+            <div className="mt-4">
+              <h3 className="text-sm font-medium mb-3 flex items-center">
+                <Code2 className="w-4 h-4 mr-2 text-primary" />
+                Ferramentas MCP Ativas
+              </h3>
+              <div className="space-y-2">
+                {(agentConfig?.allowedTools || []).map((tool) => (
+                  <div key={tool} className="flex items-center justify-between bg-background/50 p-3 rounded border border-border/50">
+                    <div>
+                      <span className="font-mono text-xs text-primary">mcp__sdr__{tool}</span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {tool === "analyze_company_fit" && "Analisa dados públicos da empresa para verificar ICP"}
+                        {tool === "get_decision_maker" && "Encontra tomadores de decisão por cargo"}
+                        {tool === "web_search" && "Busca informações na web"}
+                      </p>
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-green-400" />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Formato: <code className="bg-secondary px-1 rounded">mcp__&lt;server&gt;__&lt;tool&gt;</code> (padrão Claude Agent SDK)
+              </p>
+            </div>
+          </div>
+
           {/* General Settings */}
           <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold mb-4">Geral</h2>

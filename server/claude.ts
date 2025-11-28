@@ -12,9 +12,11 @@ function getAnthropicClient(customApiKey?: string | null): Anthropic {
   return new Anthropic({ apiKey });
 }
 
+const MCP_SERVER_NAME = "sdr";
+
 const sdrTools: Anthropic.Tool[] = [
   {
-    name: "analyze_company_fit",
+    name: `mcp__${MCP_SERVER_NAME}__analyze_company_fit`,
     description: "Analyzes a company's public data to check if it fits the ICP (Ideal Customer Profile). Returns qualification score and reasons based on company size, industry, technology stack, and funding stage.",
     input_schema: {
       type: "object" as const,
@@ -33,7 +35,7 @@ const sdrTools: Anthropic.Tool[] = [
     }
   },
   {
-    name: "get_decision_maker",
+    name: `mcp__${MCP_SERVER_NAME}__get_decision_maker`,
     description: "Finds the likely decision maker for a specific role at a company. Returns name, title, and contact information patterns.",
     input_schema: {
       type: "object" as const,
@@ -52,10 +54,16 @@ const sdrTools: Anthropic.Tool[] = [
   }
 ];
 
+function extractToolName(mcpToolName: string): string {
+  const parts = mcpToolName.split("__");
+  return parts.length === 3 ? parts[2] : mcpToolName;
+}
+
 function executeToolCall(toolName: string, toolInput: Record<string, unknown>): Record<string, unknown> {
   const timestamp = new Date().toISOString();
+  const baseTool = extractToolName(toolName);
   
-  if (toolName === "analyze_company_fit") {
+  if (baseTool === "analyze_company_fit") {
     const domain = (toolInput.company_domain as string) || "unknown.com";
     const criteria = (toolInput.criteria as string[]) || ["B2B SaaS", "Tech Stack Moderno", "Equipe de Engenharia"];
     
@@ -123,7 +131,7 @@ function executeToolCall(toolName: string, toolInput: Record<string, unknown>): 
     };
   }
   
-  if (toolName === "get_decision_maker") {
+  if (baseTool === "get_decision_maker") {
     const domain = (toolInput.company_domain as string) || "unknown.com";
     const role = (toolInput.role as string) || "Engineering Lead";
     
