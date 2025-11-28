@@ -1,7 +1,84 @@
 import Layout from "@/components/layout";
 import { Save, RotateCcw } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchDefaultAgentConfig, updateAgentConfig } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { data: agentConfig, isLoading } = useQuery({
+    queryKey: ["agent-config", "default"],
+    queryFn: fetchDefaultAgentConfig,
+  });
+
+  const [formData, setFormData] = useState({
+    name: "",
+    model: "",
+    systemPrompt: "",
+    permissionMode: "",
+    maxTurns: 10,
+  });
+
+  useEffect(() => {
+    if (agentConfig) {
+      setFormData({
+        name: agentConfig.name,
+        model: agentConfig.model,
+        systemPrompt: agentConfig.systemPrompt,
+        permissionMode: agentConfig.permissionMode,
+        maxTurns: agentConfig.maxTurns,
+      });
+    }
+  }, [agentConfig]);
+
+  const updateMutation = useMutation({
+    mutationFn: (updates: Partial<typeof formData>) => 
+      updateAgentConfig(agentConfig!.id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agent-config"] });
+      toast({
+        title: "Sucesso!",
+        description: "Configurações salvas com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao salvar configurações.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSave = () => {
+    updateMutation.mutate(formData);
+  };
+
+  const handleReset = () => {
+    if (agentConfig) {
+      setFormData({
+        name: agentConfig.name,
+        model: agentConfig.model,
+        systemPrompt: agentConfig.systemPrompt,
+        permissionMode: agentConfig.permissionMode,
+        maxTurns: agentConfig.maxTurns,
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">Carregando configurações...</div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
@@ -22,16 +99,23 @@ export default function Settings() {
                   <label className="text-sm font-medium">Nome do Agente</label>
                   <input 
                     type="text" 
-                    defaultValue="QualifyBot"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:border-primary outline-none"
+                    data-testid="input-agent-name"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Modelo</label>
-                  <select className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:border-primary outline-none">
-                    <option>claude-3-5-sonnet-20240620</option>
-                    <option>claude-3-opus-20240229</option>
-                    <option>claude-3-haiku-20240307</option>
+                  <select 
+                    value={formData.model}
+                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:border-primary outline-none"
+                    data-testid="select-model"
+                  >
+                    <option value="claude-3-5-sonnet-20240620">claude-3-5-sonnet-20240620</option>
+                    <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
+                    <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                   </select>
                 </div>
               </div>
@@ -39,8 +123,10 @@ export default function Settings() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">System Prompt</label>
                 <textarea 
+                  value={formData.systemPrompt}
+                  onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
                   className="w-full h-32 bg-background border border-input rounded-md px-3 py-2 text-sm focus:border-primary outline-none font-mono"
-                  defaultValue={`You are an expert SDR (Sales Development Representative) Agent named "QualifyBot".\nYour goal is to qualify incoming leads by analyzing their company data.`}
+                  data-testid="textarea-system-prompt"
                 />
               </div>
             </div>
@@ -55,10 +141,15 @@ export default function Settings() {
                   <div className="font-medium text-sm">Modo de Permissão</div>
                   <div className="text-xs text-muted-foreground">Como o agente deve lidar com uso de ferramentas</div>
                 </div>
-                <select className="bg-secondary border-none rounded text-sm px-2 py-1">
-                  <option>Perguntar ao Usuário</option>
-                  <option>Permitir Automaticamente</option>
-                  <option>Negar Tudo</option>
+                <select 
+                  value={formData.permissionMode}
+                  onChange={(e) => setFormData({ ...formData, permissionMode: e.target.value })}
+                  className="bg-secondary border-none rounded text-sm px-2 py-1"
+                  data-testid="select-permission-mode"
+                >
+                  <option value="ask">Perguntar ao Usuário</option>
+                  <option value="allow">Permitir Automaticamente</option>
+                  <option value="deny">Negar Tudo</option>
                 </select>
               </div>
               
@@ -69,8 +160,10 @@ export default function Settings() {
                 </div>
                 <input 
                   type="number" 
-                  defaultValue={10}
+                  value={formData.maxTurns}
+                  onChange={(e) => setFormData({ ...formData, maxTurns: parseInt(e.target.value) })}
                   className="w-20 bg-secondary border-none rounded text-sm px-2 py-1 text-right"
+                  data-testid="input-max-turns"
                 />
               </div>
             </div>
@@ -86,20 +179,34 @@ export default function Settings() {
                   type="password" 
                   defaultValue="sk-ant-api03-..."
                   className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:border-primary outline-none font-mono"
+                  placeholder="Gerenciado via variáveis de ambiente"
+                  disabled
                 />
+                <p className="text-xs text-muted-foreground">
+                  As chaves de API são gerenciadas via variáveis de ambiente para segurança
+                </p>
               </div>
             </div>
           </div>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4">
-            <button className="flex items-center px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <button 
+              onClick={handleReset}
+              className="flex items-center px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="button-reset"
+            >
               <RotateCcw className="w-4 h-4 mr-2" />
               Restaurar Padrões
             </button>
-            <button className="flex items-center px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shadow-sm">
+            <button 
+              onClick={handleSave}
+              disabled={updateMutation.isPending}
+              className="flex items-center px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+              data-testid="button-save"
+            >
               <Save className="w-4 h-4 mr-2" />
-              Salvar Alterações
+              {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
             </button>
           </div>
         </div>

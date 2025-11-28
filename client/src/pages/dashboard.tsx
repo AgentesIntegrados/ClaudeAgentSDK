@@ -3,8 +3,11 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Sparkles, Activity, ShieldCheck, Code2, Terminal, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchDefaultAgentConfig, fetchMessages, createConversation, createMessage, updateMessage } from "@/lib/api";
+import type { Message as DBMessage } from "@shared/schema";
 
-interface Message {
+interface UIMessage {
   id: string;
   role: "user" | "agent";
   content: string;
@@ -19,76 +22,132 @@ interface Message {
 
 export default function Dashboard() {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+
+  // Fetch default agent config
+  const { data: agentConfig } = useQuery({
+    queryKey: ["agent-config", "default"],
+    queryFn: fetchDefaultAgentConfig,
+  });
+
+  // Fetch messages for current conversation
+  const { data: dbMessages = [] } = useQuery({
+    queryKey: ["messages", conversationId],
+    queryFn: () => conversationId ? fetchMessages(conversationId) : Promise.resolve([]),
+    enabled: !!conversationId,
+  });
+
+  // Convert DB messages to UI format
+  const messages: UIMessage[] = dbMessages.map(msg => ({
+    id: msg.id,
+    role: msg.role as "user" | "agent",
+    content: msg.content,
+    timestamp: new Date(msg.createdAt),
+    toolUse: msg.toolUse as any,
+  }));
+
+  // Add initial greeting if no messages
+  const displayMessages: UIMessage[] = messages.length === 0 ? [
     {
-      id: "1",
+      id: "greeting",
       role: "agent",
       content: "Olá! Sou o QualifyBot, seu Agente SDR. Posso ajudar a analisar empresas e encontrar tomadores de decisão. Qual empresa devo investigar hoje?",
       timestamp: new Date()
     }
-  ]);
-  const [isTyping, setIsTyping] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  ] : messages;
+
+  const createConversationMutation = useMutation({
+    mutationFn: createConversation,
+    onSuccess: (data) => {
+      setConversationId(data.id);
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+
+  const createMessageMutation = useMutation({
+    mutationFn: createMessage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+    },
+  });
+
+  const updateMessageMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<DBMessage> }) => 
+      updateMessage(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+    },
+  });
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [displayMessages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !agentConfig) return;
 
-    const userMsg: Message = {
-      id: Date.now().toString(),
+    // Create conversation if needed
+    let convId = conversationId;
+    if (!convId) {
+      const conv = await createConversationMutation.mutateAsync({
+        agentConfigId: agentConfig.id,
+        title: input.substring(0, 50),
+      });
+      convId = conv.id;
+    }
+
+    // Save user message
+    await createMessageMutation.mutateAsync({
+      conversationId: convId,
       role: "user",
       content: input,
-      timestamp: new Date()
-    };
+      toolUse: null,
+    });
 
-    setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
 
     // Simulate Agent Thinking & Tool Use
-    setTimeout(() => {
+    setTimeout(async () => {
       // 1. Agent decides to use a tool
-      const toolMsgId = Date.now().toString() + "-tool";
-      setMessages(prev => [...prev, {
-        id: toolMsgId,
+      const toolMessage = await createMessageMutation.mutateAsync({
+        conversationId: convId!,
         role: "agent",
         content: "Deixe-me verificar os detalhes da empresa...",
-        timestamp: new Date(),
         toolUse: {
           tool: "analyze_company_fit",
           input: `{ "domain": "${input}" }`,
           status: "running"
-        }
-      }]);
+        },
+      });
 
       // 2. Tool completes
-      setTimeout(() => {
-        setMessages(prev => prev.map(m => 
-          m.id === toolMsgId 
-            ? { 
-                ...m, 
-                toolUse: { 
-                  ...m.toolUse!, 
-                  status: "completed",
-                  result: { qualified: true, score: 85, match: "Series B, Python Stack" } 
-                } 
-              } 
-            : m
-        ));
+      setTimeout(async () => {
+        await updateMessageMutation.mutateAsync({
+          id: toolMessage.id,
+          updates: {
+            toolUse: {
+              tool: "analyze_company_fit",
+              input: `{ "domain": "${input}" }`,
+              status: "completed",
+              result: { qualified: true, score: 85, match: "Series B, Python Stack" }
+            } as any
+          }
+        });
 
         // 3. Final response
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            id: Date.now().toString() + "-final",
+        setTimeout(async () => {
+          await createMessageMutation.mutateAsync({
+            conversationId: convId!,
             role: "agent",
-            content: `Com base na minha análise de ${userMsg.content}, eles têm um forte alinhamento (Pontuação: 85/100). Eles usam Python e estão no nosso estágio de financiamento alvo. Gostaria que eu encontrasse um tomador de decisão?`,
-            timestamp: new Date()
-          }]);
+            content: `Com base na minha análise de ${input}, eles têm um forte alinhamento (Pontuação: 85/100). Eles usam Python e estão no nosso estágio de financiamento alvo. Gostaria que eu encontrasse um tomador de decisão?`,
+            toolUse: null,
+          });
           setIsTyping(false);
         }, 800);
 
@@ -121,7 +180,7 @@ export default function Dashboard() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Modelo</span>
-                <span className="font-mono text-sm">claude-3-5-sonnet</span>
+                <span className="font-mono text-sm">{agentConfig?.model || "carregando..."}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Tempo Ativo</span>
@@ -137,7 +196,7 @@ export default function Dashboard() {
               Ferramentas Ativas
             </h2>
             <div className="space-y-3">
-              {["analyze_company_fit", "get_decision_maker", "web_search"].map((tool) => (
+              {(agentConfig?.allowedTools || []).map((tool) => (
                 <div key={tool} className="flex items-center justify-between bg-background/50 p-2 rounded border border-border/50">
                   <span className="font-mono text-xs">{tool}</span>
                   <div className="w-2 h-2 rounded-full bg-blue-400/50" />
@@ -155,11 +214,11 @@ export default function Dashboard() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Modo de Permissão</span>
-                <span>Perguntar ao Usuário</span>
+                <span className="capitalize">{agentConfig?.permissionMode || "-"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Máx. Turnos</span>
-                <span>10</span>
+                <span>{agentConfig?.maxTurns || "-"}</span>
               </div>
               <div className="w-full bg-secondary h-1.5 rounded-full mt-2">
                 <div className="bg-primary h-1.5 rounded-full w-[30%]" />
@@ -177,18 +236,24 @@ export default function Dashboard() {
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold">QualifyBot</h3>
+                <h3 className="font-semibold">{agentConfig?.name || "QualifyBot"}</h3>
                 <p className="text-xs text-muted-foreground">Powered by Claude Agent SDK</p>
               </div>
             </div>
-            <button className="text-xs bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded transition-colors">
+            <button 
+              onClick={() => {
+                setConversationId(null);
+                queryClient.invalidateQueries({ queryKey: ["messages"] });
+              }}
+              className="text-xs bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded transition-colors"
+            >
               Reiniciar Sessão
             </button>
           </div>
 
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
-            {messages.map((msg) => (
+            {displayMessages.map((msg) => (
               <motion.div 
                 key={msg.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -268,11 +333,13 @@ export default function Dashboard() {
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Peça ao QualifyBot para analisar uma empresa..."
                 className="w-full bg-secondary/50 border border-input hover:border-primary/50 focus:border-primary rounded-lg py-3 pl-4 pr-12 outline-none transition-colors"
+                data-testid="input-message"
               />
               <button 
                 onClick={handleSend}
                 disabled={!input.trim() || isTyping}
                 className="absolute right-2 p-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                data-testid="button-send"
               >
                 <Send className="w-4 h-4" />
               </button>
