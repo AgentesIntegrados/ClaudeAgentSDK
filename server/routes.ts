@@ -203,7 +203,8 @@ export async function registerRoutes(
         message,
         agentConfig.systemPrompt,
         history,
-        agentConfig.model
+        agentConfig.model,
+        agentConfig.customApiKey
       );
 
       // Save agent response

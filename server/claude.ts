@@ -4,9 +4,16 @@ import Anthropic from '@anthropic-ai/sdk';
 // The newest Anthropic model is "claude-sonnet-4-20250514"
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Default client using environment variable
+const defaultApiKey = process.env.ANTHROPIC_API_KEY;
+
+function getAnthropicClient(customApiKey?: string | null): Anthropic {
+  const apiKey = customApiKey || defaultApiKey;
+  if (!apiKey) {
+    throw new Error("Nenhuma chave de API configurada. Configure ANTHROPIC_API_KEY ou insira uma chave personalizada.");
+  }
+  return new Anthropic({ apiKey });
+}
 
 interface ToolDefinition {
   name: string;
@@ -111,8 +118,11 @@ export async function processAgentMessage(
   userMessage: string,
   systemPrompt: string,
   conversationHistory: ChatMessage[],
-  model?: string
+  model?: string,
+  customApiKey?: string | null
 ): Promise<AgentResponse> {
+  const anthropic = getAnthropicClient(customApiKey);
+  
   const messages = [
     ...conversationHistory,
     { role: "user" as const, content: userMessage }

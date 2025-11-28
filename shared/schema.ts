@@ -26,6 +26,7 @@ export const agentConfigs = pgTable("agent_configs", {
   permissionMode: text("permission_mode").notNull().default("ask"),
   maxTurns: integer("max_turns").notNull().default(10),
   allowedTools: text("allowed_tools").array().notNull().default(sql`ARRAY[]::text[]`),
+  customApiKey: text("custom_api_key"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
