@@ -66,7 +66,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
               <span className="text-xs font-medium text-muted-foreground">Sistema Online</span>
             </div>
-            <p className="text-xs text-muted-foreground font-mono">v1.0.4-alpha</p>
+            <p className="text-xs text-muted-foreground font-mono">v0.0.1-beta</p>
           </div>
         </div>
       </aside>
