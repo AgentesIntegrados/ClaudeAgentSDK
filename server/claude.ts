@@ -92,6 +92,10 @@ function executeToolCall(toolName: string, toolInput: Record<string, unknown>): 
     };
 
     return {
+      _metadata: {
+        source: "simulated",
+        note: "Dados de demonstração. Em produção, conectar a APIs como Clearbit, LinkedIn Sales Navigator, ou CRM."
+      },
       timestamp,
       company_domain: domain,
       analysis: {
@@ -147,6 +151,10 @@ function executeToolCall(toolName: string, toolInput: Record<string, unknown>): 
     };
 
     return {
+      _metadata: {
+        source: "simulated",
+        note: "Dados de demonstração. Em produção, conectar a APIs como LinkedIn Sales Navigator, Apollo.io, ou ZoomInfo."
+      },
       timestamp,
       company_domain: domain,
       role_searched: role,
