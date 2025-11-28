@@ -90,3 +90,28 @@ export async function updateMessage(id: string, updates: Partial<InsertMessage>)
   if (!res.ok) throw new Error("Failed to update message");
   return res.json();
 }
+
+// Chat with Claude Agent
+export interface ChatResponse {
+  userMessage: Message;
+  agentMessage: Message;
+  toolUse?: {
+    tool: string;
+    input: string;
+    status: "completed";
+    result: any;
+  };
+}
+
+export async function sendChatMessage(conversationId: string, message: string): Promise<ChatResponse> {
+  const res = await fetch(`${API_BASE}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ conversationId, message }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to send message");
+  }
+  return res.json();
+}

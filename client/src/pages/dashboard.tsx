@@ -4,8 +4,8 @@ import { Send, Bot, User, Sparkles, Activity, ShieldCheck, Code2, Terminal, Chec
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchDefaultAgentConfig, fetchMessages, createConversation, createMessage, updateMessage } from "@/lib/api";
-import type { Message as DBMessage } from "@shared/schema";
+import { fetchDefaultAgentConfig, fetchMessages, createConversation, sendChatMessage } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface UIMessage {
   id: string;
@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch default agent config
   const { data: agentConfig } = useQuery({
@@ -67,18 +68,18 @@ export default function Dashboard() {
     },
   });
 
-  const createMessageMutation = useMutation({
-    mutationFn: createMessage,
+  const chatMutation = useMutation({
+    mutationFn: ({ conversationId, message }: { conversationId: string; message: string }) => 
+      sendChatMessage(conversationId, message),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
     },
-  });
-
-  const updateMessageMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<DBMessage> }) => 
-      updateMessage(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao enviar mensagem",
+        variant: "destructive",
+      });
     },
   });
 
@@ -91,68 +92,37 @@ export default function Dashboard() {
   const handleSend = async () => {
     if (!input.trim() || !agentConfig) return;
 
-    // Create conversation if needed
-    let convId = conversationId;
-    if (!convId) {
-      const conv = await createConversationMutation.mutateAsync({
-        agentConfigId: agentConfig.id,
-        title: input.substring(0, 50),
-      });
-      convId = conv.id;
-    }
-
-    // Save user message
-    await createMessageMutation.mutateAsync({
-      conversationId: convId,
-      role: "user",
-      content: input,
-      toolUse: null,
-    });
-
+    const userInput = input;
     setInput("");
     setIsTyping(true);
 
-    // Simulate Agent Thinking & Tool Use
-    setTimeout(async () => {
-      // 1. Agent decides to use a tool
-      const toolMessage = await createMessageMutation.mutateAsync({
-        conversationId: convId!,
-        role: "agent",
-        content: "Deixe-me verificar os detalhes da empresa...",
-        toolUse: {
-          tool: "analyze_company_fit",
-          input: `{ "domain": "${input}" }`,
-          status: "running"
-        },
+    try {
+      // Create conversation if needed
+      let convId = conversationId;
+      if (!convId) {
+        const conv = await createConversationMutation.mutateAsync({
+          agentConfigId: agentConfig.id,
+          title: userInput.substring(0, 50),
+        });
+        convId = conv.id;
+      }
+
+      // Send message to Claude API
+      await chatMutation.mutateAsync({
+        conversationId: convId,
+        message: userInput,
       });
 
-      // 2. Tool completes
-      setTimeout(async () => {
-        await updateMessageMutation.mutateAsync({
-          id: toolMessage.id,
-          updates: {
-            toolUse: {
-              tool: "analyze_company_fit",
-              input: `{ "domain": "${input}" }`,
-              status: "completed",
-              result: { qualified: true, score: 85, match: "Series B, Python Stack" }
-            } as any
-          }
-        });
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
-        // 3. Final response
-        setTimeout(async () => {
-          await createMessageMutation.mutateAsync({
-            conversationId: convId!,
-            role: "agent",
-            content: `Com base na minha análise de ${input}, eles têm um forte alinhamento (Pontuação: 85/100). Eles usam Python e estão no nosso estágio de financiamento alvo. Gostaria que eu encontrasse um tomador de decisão?`,
-            toolUse: null,
-          });
-          setIsTyping(false);
-        }, 800);
-
-      }, 1500);
-    }, 600);
+  const handleResetSession = () => {
+    setConversationId(null);
+    queryClient.removeQueries({ queryKey: ["messages"] });
   };
 
   return (
@@ -183,8 +153,8 @@ export default function Dashboard() {
                 <span className="font-mono text-sm">{agentConfig?.model || "carregando..."}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Tempo Ativo</span>
-                <span className="font-mono text-sm">4h 12m</span>
+                <span className="text-muted-foreground">Mensagens</span>
+                <span className="font-mono text-sm">{messages.length}</span>
               </div>
             </div>
           </div>
@@ -196,7 +166,7 @@ export default function Dashboard() {
               Ferramentas Ativas
             </h2>
             <div className="space-y-3">
-              {(agentConfig?.allowedTools || []).map((tool) => (
+              {(agentConfig?.allowedTools || ["analyze_company_fit", "get_decision_maker"]).map((tool) => (
                 <div key={tool} className="flex items-center justify-between bg-background/50 p-2 rounded border border-border/50">
                   <span className="font-mono text-xs">{tool}</span>
                   <div className="w-2 h-2 rounded-full bg-blue-400/50" />
@@ -221,9 +191,14 @@ export default function Dashboard() {
                 <span>{agentConfig?.maxTurns || "-"}</span>
               </div>
               <div className="w-full bg-secondary h-1.5 rounded-full mt-2">
-                <div className="bg-primary h-1.5 rounded-full w-[30%]" />
+                <div 
+                  className="bg-primary h-1.5 rounded-full transition-all" 
+                  style={{ width: `${Math.min((messages.length / (agentConfig?.maxTurns || 10)) * 100, 100)}%` }}
+                />
               </div>
-              <p className="text-xs text-muted-foreground text-right pt-1">30% do Contexto Usado</p>
+              <p className="text-xs text-muted-foreground text-right pt-1">
+                {messages.length}/{agentConfig?.maxTurns || 10} turnos usados
+              </p>
             </div>
           </div>
         </div>
@@ -241,11 +216,9 @@ export default function Dashboard() {
               </div>
             </div>
             <button 
-              onClick={() => {
-                setConversationId(null);
-                queryClient.invalidateQueries({ queryKey: ["messages"] });
-              }}
+              onClick={handleResetSession}
               className="text-xs bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded transition-colors"
+              data-testid="button-reset-session"
             >
               Reiniciar Sessão
             </button>
@@ -285,20 +258,23 @@ export default function Dashboard() {
                     <div className="bg-background border border-border rounded-md p-3 text-xs font-mono space-y-2 animate-in fade-in slide-in-from-top-2">
                       <div className="flex items-center text-muted-foreground">
                         <Terminal className="w-3 h-3 mr-2" />
-                        <span>Executando: {msg.toolUse.tool}</span>
+                        <span>Executou: {msg.toolUse.tool}</span>
                       </div>
                       <div className="opacity-70 pl-5 border-l-2 border-border/50">
                         input: {msg.toolUse.input}
                       </div>
-                      {msg.toolUse.status === "completed" ? (
-                        <div className="text-green-400 pl-5 border-l-2 border-green-500/30 flex items-center gap-2">
-                          <Check className="w-3 h-3" />
-                          Concluído (230ms)
-                        </div>
-                      ) : (
-                        <div className="text-blue-400 pl-5 border-l-2 border-blue-500/30 flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
-                          Processando...
+                      <div className="text-green-400 pl-5 border-l-2 border-green-500/30 flex items-center gap-2">
+                        <Check className="w-3 h-3" />
+                        Concluído
+                      </div>
+                      {msg.toolUse.result && (
+                        <div className="text-muted-foreground pl-5 border-l-2 border-border/50 mt-1">
+                          <details className="cursor-pointer">
+                            <summary className="text-xs hover:text-foreground">Ver resultado</summary>
+                            <pre className="mt-2 text-xs overflow-auto max-h-32 bg-background/50 p-2 rounded">
+                              {JSON.stringify(msg.toolUse.result, null, 2)}
+                            </pre>
+                          </details>
                         </div>
                       )}
                     </div>
@@ -330,9 +306,10 @@ export default function Dashboard() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
                 placeholder="Peça ao QualifyBot para analisar uma empresa..."
                 className="w-full bg-secondary/50 border border-input hover:border-primary/50 focus:border-primary rounded-lg py-3 pl-4 pr-12 outline-none transition-colors"
+                disabled={isTyping}
                 data-testid="input-message"
               />
               <button 
@@ -345,7 +322,7 @@ export default function Dashboard() {
               </button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Pressione Enter para enviar • IA pode cometer erros.
+              Pressione Enter para enviar • Powered by Claude
             </p>
           </div>
         </div>

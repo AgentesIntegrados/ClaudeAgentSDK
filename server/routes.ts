@@ -3,6 +3,7 @@ import { type Server } from "http";
 import { storage } from "./storage";
 import { insertAgentConfigSchema, insertConversationSchema, insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
+import { processAgentMessage, type ChatMessage } from "./claude";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -156,6 +157,75 @@ export async function registerRoutes(
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: "Failed to update message" });
+    }
+  });
+
+  // Chat with Claude Agent - Real API Integration
+  const chatRequestSchema = z.object({
+    conversationId: z.string(),
+    message: z.string(),
+  });
+
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { conversationId, message } = chatRequestSchema.parse(req.body);
+      
+      // Get conversation and agent config
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      const agentConfig = await storage.getAgentConfig(conversation.agentConfigId);
+      if (!agentConfig) {
+        return res.status(404).json({ error: "Agent config not found" });
+      }
+
+      // Save user message
+      const userMessage = await storage.createMessage({
+        conversationId,
+        role: "user",
+        content: message,
+        toolUse: null,
+      });
+
+      // Get conversation history
+      const allMessages = await storage.getMessagesByConversation(conversationId);
+      const history: ChatMessage[] = allMessages
+        .filter(m => m.id !== userMessage.id)
+        .map(m => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        }));
+
+      // Process with Claude
+      const agentResponse = await processAgentMessage(
+        message,
+        agentConfig.systemPrompt,
+        history,
+        agentConfig.model
+      );
+
+      // Save agent response
+      const agentMessage = await storage.createMessage({
+        conversationId,
+        role: "agent",
+        content: agentResponse.content,
+        toolUse: agentResponse.toolUse || null,
+      });
+
+      res.json({
+        userMessage,
+        agentMessage,
+        toolUse: agentResponse.toolUse,
+      });
+
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: error.message || "Failed to process chat" });
     }
   });
 
