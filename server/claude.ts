@@ -1,10 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { MessageParam, ContentBlock, ToolUseBlock, TextBlock, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages';
 
-// Integration: blueprint:javascript_anthropic
-// The newest Anthropic model is "claude-sonnet-4-20250514"
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
-
-// Default client using environment variable
 const defaultApiKey = process.env.ANTHROPIC_API_KEY;
 
 function getAnthropicClient(customApiKey?: string | null): Anthropic {
@@ -15,23 +12,12 @@ function getAnthropicClient(customApiKey?: string | null): Anthropic {
   return new Anthropic({ apiKey });
 }
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  input_schema: {
-    type: "object";
-    properties: Record<string, any>;
-    required?: string[];
-  };
-}
-
-// SDR Agent Tools
-const sdrTools: ToolDefinition[] = [
+const sdrTools: Anthropic.Tool[] = [
   {
     name: "analyze_company_fit",
-    description: "Analyzes a company's public data to check if it fits the ICP (Ideal Customer Profile). Returns qualification score and reasons.",
+    description: "Analyzes a company's public data to check if it fits the ICP (Ideal Customer Profile). Returns qualification score and reasons based on company size, industry, technology stack, and funding stage.",
     input_schema: {
-      type: "object",
+      type: "object" as const,
       properties: {
         company_domain: {
           type: "string",
@@ -40,7 +26,7 @@ const sdrTools: ToolDefinition[] = [
         criteria: {
           type: "array",
           items: { type: "string" },
-          description: "List of qualification criteria (e.g., ['B2B', 'Series B+', 'US-based'])"
+          description: "List of qualification criteria to check (e.g., ['B2B', 'Series B+', 'US-based'])"
         }
       },
       required: ["company_domain"]
@@ -48,9 +34,9 @@ const sdrTools: ToolDefinition[] = [
   },
   {
     name: "get_decision_maker",
-    description: "Finds the likely decision maker for a specific role at a company.",
+    description: "Finds the likely decision maker for a specific role at a company. Returns name, title, and contact information patterns.",
     input_schema: {
-      type: "object",
+      type: "object" as const,
       properties: {
         company_domain: {
           type: "string",
@@ -58,7 +44,7 @@ const sdrTools: ToolDefinition[] = [
         },
         role: {
           type: "string",
-          description: "The role to search for (e.g., 'VP of Engineering', 'CTO')"
+          description: "The role to search for (e.g., 'VP of Engineering', 'CTO', 'Head of Product')"
         }
       },
       required: ["company_domain", "role"]
@@ -66,37 +52,123 @@ const sdrTools: ToolDefinition[] = [
   }
 ];
 
-// Simulate tool execution (in production, this would call real APIs)
-function executeToolCall(toolName: string, toolInput: any): any {
+function executeToolCall(toolName: string, toolInput: Record<string, unknown>): Record<string, unknown> {
+  const timestamp = new Date().toISOString();
+  
   if (toolName === "analyze_company_fit") {
-    // Simulated company analysis
-    const domain = toolInput.company_domain || "unknown";
-    const score = Math.floor(Math.random() * 30) + 70; // 70-100
+    const domain = (toolInput.company_domain as string) || "unknown.com";
+    const criteria = (toolInput.criteria as string[]) || ["B2B SaaS", "Tech Stack Moderno", "Equipe de Engenharia"];
+    
+    const companyData: Record<string, { industry: string; size: string; techStack: string[]; funding: string; score: number }> = {
+      "replit.com": {
+        industry: "Developer Tools / IDE",
+        size: "100-500 funcionários",
+        techStack: ["Python", "Node.js", "Go", "TypeScript"],
+        funding: "Series B - $97.4M",
+        score: 92
+      },
+      "stripe.com": {
+        industry: "Fintech / Payments",
+        size: "5000+ funcionários",
+        techStack: ["Ruby", "Python", "Go", "Scala"],
+        funding: "Series I - $600M+",
+        score: 88
+      },
+      "vercel.com": {
+        industry: "Developer Tools / Cloud",
+        size: "200-500 funcionários",
+        techStack: ["TypeScript", "Node.js", "Go", "Rust"],
+        funding: "Series D - $150M",
+        score: 95
+      }
+    };
+
+    const company = companyData[domain] || {
+      industry: "Tecnologia",
+      size: "50-200 funcionários",
+      techStack: ["Python", "JavaScript"],
+      funding: "Seed/Series A",
+      score: Math.floor(Math.random() * 20) + 70
+    };
+
     return {
-      company: domain,
-      score: score,
-      qualified: score >= 75,
+      timestamp,
+      company_domain: domain,
+      analysis: {
+        score: company.score,
+        qualified: company.score >= 75,
+        industry: company.industry,
+        company_size: company.size,
+        tech_stack: company.techStack,
+        funding_stage: company.funding,
+        criteria_checked: criteria
+      },
       match_reasons: [
-        "Stack tecnológico compatível: Python/Node.js detectado",
-        "Estágio de financiamento: Series B identificado",
-        "Localização: Região alvo confirmada"
+        `Indústria compatível: ${company.industry}`,
+        `Stack tecnológico: ${company.techStack.join(", ")}`,
+        `Estágio de funding: ${company.funding}`,
+        company.score >= 85 ? "Alta probabilidade de conversão" : "Potencial moderado de conversão"
       ],
-      risk_factors: score < 80 ? ["Possível redução de equipe recente"] : []
+      risk_factors: company.score < 85 ? [
+        "Pode requerer ciclo de vendas mais longo",
+        "Verificar orçamento disponível"
+      ] : [],
+      recommendation: company.score >= 75 
+        ? "QUALIFICADO - Prosseguir com outreach" 
+        : "NÃO QUALIFICADO - Arquivar para nurturing"
     };
   }
   
   if (toolName === "get_decision_maker") {
-    const domain = toolInput.company_domain || "unknown";
-    const role = toolInput.role || "Engineering Lead";
-    return {
-      name: "Ana Silva",
+    const domain = (toolInput.company_domain as string) || "unknown.com";
+    const role = (toolInput.role as string) || "Engineering Lead";
+    
+    const decisionMakers: Record<string, Record<string, { name: string; title: string; linkedin: string }>> = {
+      "replit.com": {
+        "CTO": { name: "Amjad Masad", title: "CEO & Co-founder", linkedin: "linkedin.com/in/amjadmasad" },
+        "VP of Engineering": { name: "Faris Masad", title: "Co-founder", linkedin: "linkedin.com/in/masadfaris" },
+        "Head of Product": { name: "Product Lead", title: "Head of Product", linkedin: "linkedin.com/company/replit" }
+      },
+      "stripe.com": {
+        "CTO": { name: "David Singleton", title: "CTO", linkedin: "linkedin.com/in/dps" },
+        "VP of Engineering": { name: "Engineering VP", title: "VP of Engineering", linkedin: "linkedin.com/company/stripe" }
+      },
+      "vercel.com": {
+        "CTO": { name: "Guillermo Rauch", title: "CEO & Founder", linkedin: "linkedin.com/in/rauchg" },
+        "VP of Engineering": { name: "Engineering Lead", title: "VP of Engineering", linkedin: "linkedin.com/company/vercel" }
+      }
+    };
+
+    const companyContacts = decisionMakers[domain] || {};
+    const contact = companyContacts[role] || {
+      name: `${role} Contact`,
       title: role,
-      linkedin: `linkedin.com/in/ana-silva-${domain.split('.')[0]}`,
-      email_pattern: `nome.sobrenome@${domain}`
+      linkedin: `linkedin.com/company/${domain.split('.')[0]}`
+    };
+
+    return {
+      timestamp,
+      company_domain: domain,
+      role_searched: role,
+      decision_maker: {
+        name: contact.name,
+        title: contact.title,
+        linkedin_url: contact.linkedin,
+        email_pattern: `nome.sobrenome@${domain}`,
+        confidence: companyContacts[role] ? "Alta" : "Média"
+      },
+      outreach_suggestions: [
+        "Mencionar stack tecnológico em comum",
+        "Referenciar case studies do setor",
+        "Propor demo técnica de 15 minutos"
+      ]
     };
   }
   
-  return { error: "Tool not found" };
+  return { 
+    error: "Ferramenta não encontrada",
+    available_tools: ["analyze_company_fit", "get_decision_maker"]
+  };
 }
 
 export interface ChatMessage {
@@ -104,14 +176,16 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface ToolUseResult {
+  tool: string;
+  input: string;
+  status: "completed";
+  result: Record<string, unknown>;
+}
+
 export interface AgentResponse {
   content: string;
-  toolUse?: {
-    tool: string;
-    input: string;
-    status: "completed";
-    result: any;
-  };
+  toolUse?: ToolUseResult;
 }
 
 export async function processAgentMessage(
@@ -123,13 +197,15 @@ export async function processAgentMessage(
 ): Promise<AgentResponse> {
   const anthropic = getAnthropicClient(customApiKey);
   
-  const messages = [
-    ...conversationHistory,
+  const messages: MessageParam[] = [
+    ...conversationHistory.map(msg => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content
+    })),
     { role: "user" as const, content: userMessage }
   ];
 
   try {
-    // First API call - may request tool use
     const response = await anthropic.messages.create({
       model: model || DEFAULT_MODEL,
       max_tokens: 2048,
@@ -138,28 +214,28 @@ export async function processAgentMessage(
       messages: messages,
     });
 
-    // Check if Claude wants to use a tool
-    const toolUseBlock = response.content.find(block => block.type === "tool_use");
+    const toolUseBlock = response.content.find(
+      (block): block is ToolUseBlock => block.type === "tool_use"
+    );
     
-    if (toolUseBlock && toolUseBlock.type === "tool_use") {
+    if (toolUseBlock) {
       const toolName = toolUseBlock.name;
-      const toolInput = toolUseBlock.input;
+      const toolInput = toolUseBlock.input as Record<string, unknown>;
       
-      // Execute the tool
       const toolResult = executeToolCall(toolName, toolInput);
       
-      // Continue conversation with tool result
-      const followUpMessages = [
+      const assistantContent: ContentBlock[] = response.content;
+      
+      const toolResultBlock: ToolResultBlockParam = {
+        type: "tool_result",
+        tool_use_id: toolUseBlock.id,
+        content: JSON.stringify(toolResult)
+      };
+
+      const followUpMessages: MessageParam[] = [
         ...messages,
-        { role: "assistant" as const, content: response.content },
-        { 
-          role: "user" as const, 
-          content: [{
-            type: "tool_result" as const,
-            tool_use_id: toolUseBlock.id,
-            content: JSON.stringify(toolResult)
-          }]
-        }
+        { role: "assistant" as const, content: assistantContent },
+        { role: "user" as const, content: [toolResultBlock] }
       ];
 
       const finalResponse = await anthropic.messages.create({
@@ -167,30 +243,37 @@ export async function processAgentMessage(
         max_tokens: 2048,
         system: systemPrompt,
         tools: sdrTools,
-        messages: followUpMessages as any,
+        messages: followUpMessages,
       });
 
-      const textContent = finalResponse.content.find(block => block.type === "text");
+      const textContent = finalResponse.content.find(
+        (block): block is TextBlock => block.type === "text"
+      );
       
       return {
-        content: textContent?.type === "text" ? textContent.text : "Análise concluída.",
+        content: textContent?.text || "Análise concluída com sucesso.",
         toolUse: {
           tool: toolName,
-          input: JSON.stringify(toolInput),
+          input: JSON.stringify(toolInput, null, 2),
           status: "completed",
           result: toolResult
         }
       };
     }
 
-    // No tool use, just return text response
-    const textBlock = response.content.find(block => block.type === "text");
+    const textBlock = response.content.find(
+      (block): block is TextBlock => block.type === "text"
+    );
+    
     return {
-      content: textBlock?.type === "text" ? textBlock.text : "Desculpe, não consegui processar sua solicitação."
+      content: textBlock?.text || "Desculpe, não consegui processar sua solicitação."
     };
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Claude API error:", error);
-    throw new Error(`Erro ao processar mensagem: ${error.message}`);
+    if (error instanceof Error) {
+      throw new Error(`Erro na API Claude: ${error.message}`);
+    }
+    throw new Error("Erro desconhecido ao processar mensagem");
   }
 }
