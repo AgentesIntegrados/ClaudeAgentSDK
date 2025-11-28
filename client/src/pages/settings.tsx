@@ -128,19 +128,23 @@ export default function Settings() {
                 Ferramentas MCP Ativas
               </h3>
               <div className="space-y-2">
-                {(agentConfig?.allowedTools || []).map((tool) => (
-                  <div key={tool} className="flex items-center justify-between bg-background/50 p-3 rounded border border-border/50">
-                    <div>
-                      <span className="font-mono text-xs text-primary">mcp__sdr__{tool}</span>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {tool === "analyze_company_fit" && "Analisa dados públicos da empresa para verificar ICP"}
-                        {tool === "get_decision_maker" && "Encontra tomadores de decisão por cargo"}
-                        {tool === "web_search" && "Busca informações na web"}
-                      </p>
+                {(agentConfig?.allowedTools || []).map((tool) => {
+                  const baseTool = tool.startsWith("mcp__") ? tool.split("__").pop() : tool;
+                  const mcpName = tool.startsWith("mcp__") ? tool : `mcp__sdr__${tool}`;
+                  return (
+                    <div key={tool} className="flex items-center justify-between bg-background/50 p-3 rounded border border-border/50">
+                      <div>
+                        <span className="font-mono text-xs text-primary">{mcpName}</span>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {baseTool === "analyze_company_fit" && "Analisa dados públicos da empresa para verificar ICP"}
+                          {baseTool === "get_decision_maker" && "Encontra tomadores de decisão por cargo"}
+                          {baseTool === "web_search" && "Busca informações na web"}
+                        </p>
+                      </div>
+                      <div className="w-2 h-2 rounded-full bg-green-400" />
                     </div>
-                    <div className="w-2 h-2 rounded-full bg-green-400" />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <p className="text-xs text-muted-foreground mt-3">
                 Formato: <code className="bg-secondary px-1 rounded">mcp__&lt;server&gt;__&lt;tool&gt;</code> (padrão Claude Agent SDK)
