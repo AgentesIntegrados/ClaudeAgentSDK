@@ -2,9 +2,29 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { WebSocketServer } from "ws";
+import { addLogClient, removeLogClient, broadcastLog } from "./logger";
 
 const app = express();
 const httpServer = createServer(app);
+
+const wss = new WebSocketServer({ server: httpServer, path: "/ws/logs" });
+
+wss.on("connection", (ws) => {
+  addLogClient(ws);
+  
+  ws.send(JSON.stringify({
+    type: "connected",
+    timestamp: new Date().toISOString(),
+    message: "Conectado ao servidor de logs em tempo real"
+  }));
+  
+  broadcastLog("INFO", "Novo cliente conectado aos logs");
+  
+  ws.on("close", () => {
+    removeLogClient(ws);
+  });
+});
 
 declare module "http" {
   interface IncomingMessage {

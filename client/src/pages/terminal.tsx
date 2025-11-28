@@ -1,121 +1,118 @@
 import Layout from "@/components/layout";
-import { Terminal, Trash2, Download, Filter } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchConversations, fetchMessages } from "@/lib/api";
+import { Trash2, Download, Wifi, WifiOff } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface LogEntry {
   id: string;
-  timestamp: Date;
+  timestamp: string;
   level: "INFO" | "AGENT" | "TOOL" | "ERROR" | "WARN";
   message: string;
-  details?: string;
+  details?: unknown;
 }
 
 export default function LiveLogs() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<string>("all");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isConnected, setIsConnected] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { data: conversations } = useQuery({
-    queryKey: ["conversations"],
-    queryFn: fetchConversations,
-    refetchInterval: 3000,
-  });
-
-  const latestConversationId = conversations?.[0]?.id;
-
-  const { data: messages } = useQuery({
-    queryKey: ["messages", latestConversationId],
-    queryFn: () => latestConversationId ? fetchMessages(latestConversationId) : Promise.resolve([]),
-    enabled: !!latestConversationId,
-    refetchInterval: 2000,
-  });
-
-  useEffect(() => {
-    const initialLogs: LogEntry[] = [
-      {
-        id: "init-1",
-        timestamp: new Date(),
-        level: "INFO",
-        message: "Sistema iniciado com sucesso",
-      },
-      {
-        id: "init-2",
-        timestamp: new Date(),
-        level: "INFO",
-        message: "Carregando configurações do agente...",
-      },
-      {
-        id: "init-3",
-        timestamp: new Date(),
-        level: "AGENT",
-        message: "QualifyBot inicializado (modelo: claude-sonnet-4)",
-      },
-      {
-        id: "init-4",
-        timestamp: new Date(),
-        level: "INFO",
-        message: "Aguardando entrada do usuário...",
-      },
-    ];
-    setLogs(initialLogs);
+  const addLog = useCallback((log: LogEntry) => {
+    setLogs(prev => [...prev, log].slice(-200));
   }, []);
 
-  useEffect(() => {
-    if (messages && messages.length > 0) {
-      const newLogs: LogEntry[] = [];
-      
-      messages.forEach((msg) => {
-        const timestamp = new Date(msg.createdAt);
-        
-        if (msg.role === "user") {
-          newLogs.push({
-            id: `user-${msg.id}`,
-            timestamp,
-            level: "INFO",
-            message: `Mensagem recebida do usuário`,
-            details: msg.content.substring(0, 100) + (msg.content.length > 100 ? "..." : ""),
-          });
-        } else {
-          if (msg.toolUse) {
-            const toolUse = msg.toolUse as any;
-            newLogs.push({
-              id: `tool-${msg.id}`,
-              timestamp,
-              level: "TOOL",
-              message: `Executando '${toolUse.tool}'`,
-              details: `Input: ${toolUse.input}`,
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws/logs`;
+    
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setIsConnected(true);
+        addLog({
+          id: `system-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          level: "INFO",
+          message: "Conectado ao servidor de logs em tempo real"
+        });
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "log") {
+            addLog({
+              id: data.id,
+              timestamp: data.timestamp,
+              level: data.level as LogEntry["level"],
+              message: data.message,
+              details: data.details
             });
-            newLogs.push({
-              id: `tool-result-${msg.id}`,
-              timestamp: new Date(timestamp.getTime() + 500),
-              level: "TOOL",
-              message: `Ferramenta '${toolUse.tool}' concluída com sucesso`,
+          } else if (data.type === "connected") {
+            addLog({
+              id: `welcome-${Date.now()}`,
+              timestamp: data.timestamp,
+              level: "INFO",
+              message: data.message
             });
           }
-          
-          newLogs.push({
-            id: `agent-${msg.id}`,
-            timestamp: new Date(timestamp.getTime() + 1000),
-            level: "AGENT",
-            message: "Resposta gerada pelo agente",
-            details: msg.content.substring(0, 100) + (msg.content.length > 100 ? "..." : ""),
-          });
+        } catch (e) {
+          console.error("Erro ao parsear mensagem:", e);
         }
-      });
+      };
 
-      setLogs(prev => {
-        const existingIds = new Set(prev.map(l => l.id));
-        const uniqueNewLogs = newLogs.filter(l => !existingIds.has(l.id));
-        if (uniqueNewLogs.length > 0) {
-          return [...prev, ...uniqueNewLogs].slice(-100);
-        }
-        return prev;
-      });
+      ws.onclose = () => {
+        setIsConnected(false);
+        addLog({
+          id: `disconnect-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          level: "WARN",
+          message: "Desconectado do servidor. Reconectando..."
+        });
+        
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connectWebSocket();
+        }, 3000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    } catch (error) {
+      console.error("Erro ao conectar WebSocket:", error);
+      reconnectTimeoutRef.current = setTimeout(() => {
+        connectWebSocket();
+      }, 3000);
     }
-  }, [messages]);
+  }, [addLog]);
+
+  useEffect(() => {
+    setLogs([
+      {
+        id: "init-1",
+        timestamp: new Date().toISOString(),
+        level: "INFO",
+        message: "Inicializando conexão com servidor de logs..."
+      }
+    ]);
+    
+    connectWebSocket();
+
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [connectWebSocket]);
 
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
@@ -133,17 +130,19 @@ export default function LiveLogs() {
 
   const clearLogs = () => {
     setLogs([{
-      id: "clear-" + Date.now(),
-      timestamp: new Date(),
+      id: `clear-${Date.now()}`,
+      timestamp: new Date().toISOString(),
       level: "INFO",
-      message: "Logs limpos pelo usuário",
+      message: "Logs limpos pelo usuário"
     }]);
   };
 
   const downloadLogs = () => {
-    const content = logs.map(log => 
-      `${log.timestamp.toISOString()} [${log.level}] ${log.message}${log.details ? `\n    ${log.details}` : ""}`
-    ).join("\n");
+    const content = logs.map(log => {
+      const time = new Date(log.timestamp).toLocaleString("pt-BR");
+      const details = log.details ? `\n    ${JSON.stringify(log.details)}` : "";
+      return `${time} [${log.level}] ${log.message}${details}`;
+    }).join("\n");
     
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -169,8 +168,8 @@ export default function LiveLogs() {
     }
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("pt-BR", { 
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString("pt-BR", { 
       hour: "2-digit", 
       minute: "2-digit", 
       second: "2-digit" 
@@ -184,11 +183,20 @@ export default function LiveLogs() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight mb-2">Logs em Tempo Real</h1>
             <p className="text-muted-foreground">
-              Monitore as ações do agente e saídas do sistema em tempo real.
+              Monitore as ações do agente e saídas do sistema em tempo real via WebSocket.
             </p>
           </div>
           
           <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+              isConnected 
+                ? "bg-green-500/20 text-green-400" 
+                : "bg-red-500/20 text-red-400"
+            }`}>
+              {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+              {isConnected ? "Conectado" : "Desconectado"}
+            </div>
+            
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
@@ -200,6 +208,7 @@ export default function LiveLogs() {
               <option value="AGENT">AGENT</option>
               <option value="TOOL">TOOL</option>
               <option value="ERROR">ERROR</option>
+              <option value="WARN">WARN</option>
             </select>
             
             <button
@@ -225,34 +234,31 @@ export default function LiveLogs() {
         <div 
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex-1 bg-[#1e1e1e] rounded-lg border border-border shadow-sm p-4 font-mono text-sm overflow-y-auto relative"
+          className="flex-1 bg-[#0d1117] rounded-lg border border-border shadow-sm p-4 font-mono text-sm overflow-y-auto"
         >
-          <div className="absolute top-4 right-4 flex items-center space-x-2 bg-[#1e1e1e]/80 px-2 py-1 rounded">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <span className="text-xs text-zinc-400">Conectado</span>
-          </div>
-          
-          <div className="space-y-1 pt-6">
+          <div className="space-y-1">
             {filteredLogs.map((log) => (
-              <div key={log.id} className="group">
+              <div key={log.id} className="group hover:bg-white/5 px-2 py-0.5 rounded">
                 <div className="flex items-start gap-2">
-                  <span className="text-zinc-600 shrink-0">{formatTime(log.timestamp)}</span>
-                  <span className={`shrink-0 font-semibold ${getLevelColor(log.level)}`}>
+                  <span className="text-zinc-600 shrink-0 tabular-nums">{formatTime(log.timestamp)}</span>
+                  <span className={`shrink-0 font-semibold w-14 ${getLevelColor(log.level)}`}>
                     [{log.level}]
                   </span>
                   <span className={getLevelColor(log.level)}>{log.message}</span>
                 </div>
                 {log.details && (
-                  <div className="pl-24 text-zinc-500 text-xs mt-0.5">
-                    {log.details}
+                  <div className="pl-28 text-zinc-500 text-xs mt-0.5 font-mono whitespace-pre-wrap">
+                    {String(typeof log.details === "string" 
+                      ? log.details 
+                      : JSON.stringify(log.details, null, 2))}
                   </div>
                 )}
               </div>
             ))}
           </div>
           
-          <div className="mt-4 flex items-center text-zinc-600 animate-pulse">
-            <span className="mr-2">_</span>
+          <div className="mt-4 flex items-center text-green-500">
+            <span className="animate-pulse">▌</span>
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertAgentConfigSchema, insertConversationSchema, insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import { processAgentMessage, type ChatMessage } from "./claude";
+import { broadcastLog } from "./logger";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -170,18 +171,22 @@ export async function registerRoutes(
     try {
       const { conversationId, message } = chatRequestSchema.parse(req.body);
       
-      // Get conversation and agent config
+      broadcastLog("INFO", "Nova mensagem recebida do usuário", { preview: message.substring(0, 50) });
+      
       const conversation = await storage.getConversation(conversationId);
       if (!conversation) {
+        broadcastLog("ERROR", "Conversa não encontrada", { conversationId });
         return res.status(404).json({ error: "Conversation not found" });
       }
 
       const agentConfig = await storage.getAgentConfig(conversation.agentConfigId);
       if (!agentConfig) {
+        broadcastLog("ERROR", "Configuração do agente não encontrada");
         return res.status(404).json({ error: "Agent config not found" });
       }
 
-      // Save user message
+      broadcastLog("AGENT", `Processando com ${agentConfig.name}`, { model: agentConfig.model });
+
       const userMessage = await storage.createMessage({
         conversationId,
         role: "user",
@@ -189,7 +194,6 @@ export async function registerRoutes(
         toolUse: null,
       });
 
-      // Get conversation history
       const allMessages = await storage.getMessagesByConversation(conversationId);
       const history: ChatMessage[] = allMessages
         .filter(m => m.id !== userMessage.id)
@@ -198,7 +202,8 @@ export async function registerRoutes(
           content: m.content,
         }));
 
-      // Process with Claude
+      broadcastLog("AGENT", "Enviando requisição para Claude API...");
+      
       const agentResponse = await processAgentMessage(
         message,
         agentConfig.systemPrompt,
@@ -207,12 +212,22 @@ export async function registerRoutes(
         agentConfig.customApiKey
       );
 
-      // Save agent response
+      if (agentResponse.toolUse) {
+        broadcastLog("TOOL", `Executando ferramenta: ${agentResponse.toolUse.tool}`, {
+          input: agentResponse.toolUse.input
+        });
+        broadcastLog("TOOL", `Ferramenta ${agentResponse.toolUse.tool} concluída com sucesso`);
+      }
+
       const agentMessage = await storage.createMessage({
         conversationId,
         role: "agent",
         content: agentResponse.content,
         toolUse: agentResponse.toolUse || null,
+      });
+
+      broadcastLog("AGENT", "Resposta gerada com sucesso", { 
+        preview: agentResponse.content.substring(0, 50) + "..." 
       });
 
       res.json({
@@ -223,6 +238,7 @@ export async function registerRoutes(
 
     } catch (error: any) {
       console.error("Chat error:", error);
+      broadcastLog("ERROR", `Erro no processamento: ${error.message}`);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
