@@ -23,7 +23,7 @@ export default function Dashboard() {
     {
       id: "1",
       role: "agent",
-      content: "Hello! I am QualifyBot, your SDR Agent. I can help you analyze companies and find decision makers. What company should I investigate today?",
+      content: "Olá! Sou o QualifyBot, seu Agente SDR. Posso ajudar a analisar empresas e encontrar tomadores de decisão. Qual empresa devo investigar hoje?",
       timestamp: new Date()
     }
   ]);
@@ -57,7 +57,7 @@ export default function Dashboard() {
       setMessages(prev => [...prev, {
         id: toolMsgId,
         role: "agent",
-        content: "Let me check the company details...",
+        content: "Deixe-me verificar os detalhes da empresa...",
         timestamp: new Date(),
         toolUse: {
           tool: "analyze_company_fit",
@@ -86,7 +86,7 @@ export default function Dashboard() {
           setMessages(prev => [...prev, {
             id: Date.now().toString() + "-final",
             role: "agent",
-            content: `Based on my analysis of ${userMsg.content}, they are a strong fit (Score: 85/100). They use Python and are in our target funding stage. Would you like me to find a decision maker?`,
+            content: `Com base na minha análise de ${userMsg.content}, eles têm um forte alinhamento (Pontuação: 85/100). Eles usam Python e estão no nosso estágio de financiamento alvo. Gostaria que eu encontrasse um tomador de decisão?`,
             timestamp: new Date()
           }]);
           setIsTyping(false);
@@ -109,22 +109,22 @@ export default function Dashboard() {
             </div>
             <h2 className="text-lg font-semibold mb-4 flex items-center">
               <Activity className="w-5 h-5 mr-2 text-primary" />
-              Agent Status
+              Status do Agente
             </h2>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">State</span>
+                <span className="text-muted-foreground">Estado</span>
                 <span className="flex items-center text-green-400 bg-green-400/10 px-2 py-1 rounded text-xs font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 mr-2 animate-pulse" />
-                  Active
+                  Ativo
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Model</span>
+                <span className="text-muted-foreground">Modelo</span>
                 <span className="font-mono text-sm">claude-3-5-sonnet</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Uptime</span>
+                <span className="text-muted-foreground">Tempo Ativo</span>
                 <span className="font-mono text-sm">4h 12m</span>
               </div>
             </div>
@@ -134,7 +134,7 @@ export default function Dashboard() {
           <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold mb-4 flex items-center">
               <Code2 className="w-5 h-5 mr-2 text-primary" />
-              Active Tools
+              Ferramentas Ativas
             </h2>
             <div className="space-y-3">
               {["analyze_company_fit", "get_decision_maker", "web_search"].map((tool) => (
@@ -150,21 +150,21 @@ export default function Dashboard() {
           <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold mb-4 flex items-center">
               <ShieldCheck className="w-5 h-5 mr-2 text-primary" />
-              Safety & Limits
+              Segurança & Limites
             </h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Permission Mode</span>
-                <span>Ask User</span>
+                <span className="text-muted-foreground">Modo de Permissão</span>
+                <span>Perguntar ao Usuário</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Max Turns</span>
+                <span className="text-muted-foreground">Máx. Turnos</span>
                 <span>10</span>
               </div>
               <div className="w-full bg-secondary h-1.5 rounded-full mt-2">
                 <div className="bg-primary h-1.5 rounded-full w-[30%]" />
               </div>
-              <p className="text-xs text-muted-foreground text-right pt-1">30% Context Used</p>
+              <p className="text-xs text-muted-foreground text-right pt-1">30% do Contexto Usado</p>
             </div>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function Dashboard() {
               </div>
             </div>
             <button className="text-xs bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded transition-colors">
-              Reset Session
+              Reiniciar Sessão
             </button>
           </div>
 
@@ -220,7 +220,7 @@ export default function Dashboard() {
                     <div className="bg-background border border-border rounded-md p-3 text-xs font-mono space-y-2 animate-in fade-in slide-in-from-top-2">
                       <div className="flex items-center text-muted-foreground">
                         <Terminal className="w-3 h-3 mr-2" />
-                        <span>Calling: {msg.toolUse.tool}</span>
+                        <span>Executando: {msg.toolUse.tool}</span>
                       </div>
                       <div className="opacity-70 pl-5 border-l-2 border-border/50">
                         input: {msg.toolUse.input}
@@ -228,12 +228,12 @@ export default function Dashboard() {
                       {msg.toolUse.status === "completed" ? (
                         <div className="text-green-400 pl-5 border-l-2 border-green-500/30 flex items-center gap-2">
                           <Check className="w-3 h-3" />
-                          Done (230ms)
+                          Concluído (230ms)
                         </div>
                       ) : (
                         <div className="text-blue-400 pl-5 border-l-2 border-blue-500/30 flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
-                          Processing...
+                          Processando...
                         </div>
                       )}
                     </div>
@@ -266,7 +266,7 @@ export default function Dashboard() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="Ask QualifyBot to analyze a company..."
+                placeholder="Peça ao QualifyBot para analisar uma empresa..."
                 className="w-full bg-secondary/50 border border-input hover:border-primary/50 focus:border-primary rounded-lg py-3 pl-4 pr-12 outline-none transition-colors"
               />
               <button 
@@ -278,7 +278,7 @@ export default function Dashboard() {
               </button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Press Enter to send • AI can make mistakes.
+              Pressione Enter para enviar • IA pode cometer erros.
             </p>
           </div>
         </div>

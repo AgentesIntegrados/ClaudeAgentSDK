@@ -65,7 +65,7 @@ export default function Architecture() {
     if (FILE_CONTENTS[filename]) return FILE_CONTENTS[filename];
     
     const key = Object.keys(FILE_CONTENTS).find(k => k.endsWith(`/${filename}`) || k === filename);
-    return key ? FILE_CONTENTS[key] : "# File content not available in preview";
+    return key ? FILE_CONTENTS[key] : "# Conteúdo do arquivo não disponível na visualização";
   };
 
   const handleCopy = () => {
@@ -78,9 +78,9 @@ export default function Architecture() {
     <Layout>
       <div className="flex flex-col h-[calc(100vh-8rem)] gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Project Architecture</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Arquitetura do Projeto</h1>
           <p className="text-muted-foreground">
-            Review the proposed Python structure and source code for the Claude Agent.
+            Revise a estrutura Python proposta e o código fonte do Agente Claude.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default function Architecture() {
           {/* File Explorer */}
           <div className="w-64 border-r border-border bg-sidebar flex flex-col">
             <div className="p-3 border-b border-border">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Explorer</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Explorador</span>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
               {PROJECT_STRUCTURE.map((item) => (
@@ -114,7 +114,7 @@ export default function Architecture() {
                 className="flex items-center text-xs text-gray-400 hover:text-white transition-colors"
               >
                 {copied ? <Check className="w-3 h-3 mr-1 text-green-500" /> : <Copy className="w-3 h-3 mr-1" />}
-                {copied ? "Copied" : "Copy"}
+                {copied ? "Copiado" : "Copiar"}
               </button>
             </div>
             <div className="flex-1 overflow-y-auto relative">

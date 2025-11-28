@@ -17,9 +17,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/architecture", icon: FileCode, label: "Architecture Spec" },
-    { href: "/terminal", icon: Terminal, label: "Live Logs" },
-    { href: "/settings", icon: Settings, label: "Configuration" },
+    { href: "/architecture", icon: FileCode, label: "Especificação de Arquitetura" },
+    { href: "/terminal", icon: Terminal, label: "Logs em Tempo Real" },
+    { href: "/settings", icon: Settings, label: "Configurações" },
   ];
 
   return (
@@ -64,7 +64,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="bg-sidebar-accent/50 rounded-lg p-3">
             <div className="flex items-center mb-2">
               <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-              <span className="text-xs font-medium text-muted-foreground">System Online</span>
+              <span className="text-xs font-medium text-muted-foreground">Sistema Online</span>
             </div>
             <p className="text-xs text-muted-foreground font-mono">v1.0.4-alpha</p>
           </div>
