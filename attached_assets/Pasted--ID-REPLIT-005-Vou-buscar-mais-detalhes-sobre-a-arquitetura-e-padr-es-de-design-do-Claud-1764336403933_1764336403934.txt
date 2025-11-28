@@ -1,0 +1,191 @@
+**[ID: REPLIT-005]**
+
+---
+
+Vou buscar mais detalhes sobre a arquitetura e padrões de design do Claude Agent SDK.**[ID: REPLIT-005]**
+
+---
+
+## Arquitetura e Padrões de Design do Claude Agent SDK
+
+### Princípio Central de Design
+
+O princípio-chave por trás do Claude Agent SDK é dar aos seus agentes um computador, permitindo que trabalhem como humanos fazem.
+
+---
+
+### 1. LOOP DO AGENTE (Padrão Fundamental)
+
+No Claude Code, o Claude frequentemente opera em um loop de feedback específico: **coletar contexto → tomar ação → verificar trabalho → repetir**.
+
+```
+┌─────────────────────────────────────────────────┐
+│                  AGENT LOOP                     │
+│                                                 │
+│   ┌──────────┐    ┌──────────┐    ┌──────────┐ │
+│   │ GATHER   │───▶│  TAKE    │───▶│ VERIFY   │ │
+│   │ CONTEXT  │    │  ACTION  │    │  WORK    │ │
+│   └──────────┘    └──────────┘    └──────────┘ │
+│        ▲                               │       │
+│        └───────────────────────────────┘       │
+│                    REPEAT                      │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+### 2. ESTRUTURA DE ARQUIVOS (File System-Based Config)
+
+O SDK fornece acesso a todos os recursos padrão disponíveis no Claude Code, aproveitando a mesma configuração baseada em sistema de arquivos.
+
+```
+projeto/
+├── .claude/
+│   ├── agents/           # Subagentes como arquivos Markdown
+│   │   └── search_agent.md
+│   ├── skills/           # Capacidades especializadas
+│   │   └── SKILL.md
+│   ├── commands/         # Slash commands customizados
+│   │   └── my_command.md
+│   └── settings.json     # Hooks e configurações
+├── CLAUDE.md             # Memory/contexto do projeto
+├── src/
+│   ├── agent.py
+│   └── tools/
+│       └── custom_tools.py
+├── data/                 # Contexto pesquisável pelo agente
+│   └── conversations/
+└── .env
+```
+
+---
+
+### 3. COMPONENTES CORE DO SDK
+
+| Componente | Descrição | Ref |
+|------------|-----------|-----|
+| **Context Management** | Compactação automática e gerenciamento de contexto para garantir que seu agente não fique sem contexto. | Built-in |
+| **Tool Ecosystem** | Operações de arquivo, execução de código, busca web e extensibilidade MCP. | Tools |
+| **Advanced Permissions** | Controle granular sobre capacidades do agente. | Security |
+| **Production Essentials** | Tratamento de erros integrado, gerenciamento de sessão e monitoramento. | Ops |
+| **Optimized Integration** | Cache automático de prompts e otimizações de performance. | Perf |
+
+---
+
+### 4. GATHER CONTEXT (Fase 1)
+
+#### 4.1 Busca Agêntica via File System
+O sistema de arquivos representa informação que pode ser puxada para o contexto do modelo. Quando Claude encontra arquivos grandes, como logs ou arquivos enviados pelo usuário, ele decide como carregar estes no seu contexto usando scripts bash como `grep` e `tail`. Em essência, a estrutura de pastas e arquivos de um agente se torna uma forma de engenharia de contexto.
+
+#### 4.2 Subagentes
+Subagentes são úteis por duas razões principais. Primeiro, permitem paralelização: você pode iniciar múltiplos subagentes para trabalhar em tarefas diferentes simultaneamente. Segundo, ajudam a gerenciar contexto: subagentes usam suas próprias janelas de contexto isoladas, e só enviam informação relevante de volta ao orquestrador, ao invés de todo seu contexto.
+
+#### 4.3 Compactação Automática
+Quando agentes rodam por longos períodos, manutenção de contexto se torna crítica. O recurso de compactação do Claude Agent SDK automaticamente resume mensagens anteriores quando o limite de contexto se aproxima.
+
+---
+
+### 5. TAKE ACTION (Fase 2)
+
+#### 5.1 Tools (Ação Primária)
+Ferramentas são os blocos de construção primários de execução para seu agente. Ferramentas são proeminentes na janela de contexto do Claude, tornando-as as ações primárias que Claude considerará ao decidir como completar uma tarefa.
+
+#### 5.2 Bash & Scripts
+Bash é útil como ferramenta de propósito geral para permitir que o agente faça trabalho flexível usando um computador.
+
+#### 5.3 Geração de Código
+O Claude Agent SDK se destaca em geração de código. Código é preciso, componível e infinitamente reutilizável, tornando-o uma saída ideal para agentes que precisam realizar operações complexas de forma confiável.
+
+#### 5.4 MCP (Integrações)
+O Model Context Protocol (MCP) fornece integrações padronizadas para serviços externos, lidando com autenticação e chamadas de API automaticamente. Isso significa que você pode conectar seu agente a ferramentas como Slack, GitHub, Google Drive ou Asana sem escrever código de integração customizado.
+
+---
+
+### 6. VERIFY WORK (Fase 3)
+
+Agentes que podem verificar e melhorar seu próprio output são fundamentalmente mais confiáveis — eles pegam erros antes que se acumulem, auto-corrigem quando desviam, e melhoram conforme iteram.
+
+| Método | Uso |
+|--------|-----|
+| **Regras Definidas** | A melhor forma de feedback é fornecer regras claramente definidas para um output, então explicar quais regras falharam e por quê. Code linting é uma excelente forma de feedback baseado em regras. |
+| **Feedback Visual** | Ao usar um agente para completar tarefas visuais, como geração de UI ou testes, feedback visual (na forma de screenshots ou renders) pode ser útil. |
+| **LLM as Judge** | Você também pode ter outro modelo de linguagem "julgar" o output do seu agente baseado em regras fuzzy. |
+
+---
+
+### 7. CONFIGURAÇÃO DE PERMISSÕES
+
+```python
+from claude_agent_sdk import ClaudeAgentOptions
+
+options = ClaudeAgentOptions(
+    # Ferramentas permitidas
+    allowed_tools=["Read", "Write", "Bash", "mcp__*"],
+    
+    # Ferramentas bloqueadas
+    disallowed_tools=["WebSearch"],
+    
+    # Modo de permissão
+    permission_mode="acceptEdits",  # ou "ask", "deny"
+    
+    # Contexto do projeto
+    setting_sources=["project"],  # carrega CLAUDE.md
+    
+    # Limite de turnos
+    max_turns=20
+)
+```
+
+---
+
+### 8. ARQUITETURA RECOMENDADA PARA PRODUÇÃO
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      SEU AGENTE                             │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │ CLAUDE.md   │  │ System      │  │ Settings.json       │ │
+│  │ (Memory)    │  │ Prompt      │  │ (Hooks/Config)      │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│                    CLAUDE AGENT SDK                         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │ Context  │ │ Tools    │ │ MCP      │ │ Subagents│       │
+│  │ Manager  │ │ Engine   │ │ Servers  │ │ Manager  │       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
+├─────────────────────────────────────────────────────────────┤
+│                    INFRAESTRUTURA                           │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │ File     │ │ Bash     │ │ External │ │ Cache    │       │
+│  │ System   │ │ Terminal │ │ APIs     │ │ Layer    │       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 9. CHECKLIST DE DESIGN
+
+**Original (minha síntese baseada nos padrões):**
+
+- [ ] Loop do agente implementado (gather → action → verify → repeat)
+- [ ] File system estruturado para busca agêntica
+- [ ] CLAUDE.md com contexto do projeto
+- [ ] Tools mínimas e bem definidas
+- [ ] Permissões granulares configuradas
+- [ ] Verificação de trabalho com regras claras
+- [ ] Subagentes para tarefas paralelas/isoladas
+- [ ] MCP servers para integrações externas
+- [ ] Hooks para automações em eventos
+- [ ] Tratamento de erros e logging
+
+---
+
+**Verificação:** ✓ Todas as citações são da documentação oficial da Anthropic. A arquitetura e checklist são sínteses originais baseadas nos padrões documentados.
+
+**Refs:**
+- https://docs.claude.com/en/api/agent-sdk/overview
+- https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk
+
+Quer que eu gere o prompt completo para Replit incorporando esses padrões?
