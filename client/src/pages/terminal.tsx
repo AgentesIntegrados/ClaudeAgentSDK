@@ -7,7 +7,7 @@ interface LogEntry {
   timestamp: string;
   level: "INFO" | "AGENT" | "TOOL" | "ERROR" | "WARN";
   message: string;
-  details?: unknown;
+  details?: string | Record<string, unknown>;
 }
 
 export default function LiveLogs() {
@@ -52,7 +52,7 @@ export default function LiveLogs() {
               timestamp: data.timestamp,
               level: data.level as LogEntry["level"],
               message: data.message,
-              details: data.details
+              details: data.details as string | Record<string, unknown> | undefined
             });
           } else if (data.type === "connected") {
             addLog({
