@@ -23,7 +23,7 @@ export const agentConfigs = pgTable("agent_configs", {
   name: text("name").notNull(),
   model: text("model").notNull().default("claude-3-5-sonnet-20240620"),
   systemPrompt: text("system_prompt").notNull(),
-  permissionMode: text("permission_mode").notNull().default("ask"),
+  permissionMode: text("permission_mode").notNull().default("allow"),
   maxTurns: integer("max_turns").notNull().default(10),
   allowedTools: text("allowed_tools").array().notNull().default(sql`ARRAY[]::text[]`),
   customApiKey: text("custom_api_key"),

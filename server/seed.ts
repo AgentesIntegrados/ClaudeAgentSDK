@@ -26,7 +26,7 @@ Seu objetivo é qualificar leads entrantes analisando dados da empresa e determi
 - Seja profissional e conciso.
 - Sempre cite o motivo da qualificação.
 - Se uma empresa não for qualificada, explique educadamente o porquê.`,
-        permissionMode: "ask",
+        permissionMode: "allow",
         maxTurns: 10,
         allowedTools: ["analyze_company_fit", "get_decision_maker", "web_search"]
       });
