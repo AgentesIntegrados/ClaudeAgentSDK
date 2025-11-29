@@ -146,21 +146,6 @@ const analyzeExpertFit = tool(
         autoridade: ["Cofundador e CEO @doc4u.mentoria", "Especialista em vendas para médicos", "Mentor de profissionais de saúde"],
         estruturaVendas: ["Mentoria estruturada", "Página de vendas", "Funil de captação"],
         score: 88
-      },
-      "drfredericomaia": {
-        nome: "Dr. Frederico Maia",
-        nicho: "Urologia e Cirurgia Robótica",
-        publicoAlvo: "Médicos urologistas e cirurgiões",
-        seguidores: 180000,
-        infoprodutos: [
-          { nome: "Curso Cirurgia Robótica Avançada", tipo: "Curso com módulos práticos", ticketMedio: "R$ 4.500" },
-          { nome: "Mentoria Urologia High Performance", tipo: "Mentoria individual", ticketMedio: "R$ 12.000" },
-          { nome: "Imersão Técnicas Cirúrgicas", tipo: "Evento presencial 3 dias", ticketMedio: "R$ 6.000" }
-        ],
-        comunidade: { nome: "Comunidade Urologistas de Elite", membros: 1500 },
-        autoridade: ["Referência em cirurgia robótica no Brasil", "Palestrante em congressos internacionais", "Autor de artigos científicos", "Mentor de mais de 500 médicos"],
-        estruturaVendas: ["Página de vendas profissional", "Lista de espera exclusiva", "Lançamentos estruturados", "Equipe de vendas especializada"],
-        score: 96
       }
     };
 
@@ -357,15 +342,6 @@ const getExpertContact = tool(
         tempo_resposta: "2-4 dias úteis",
         melhor_abordagem: "Email ou DM mencionando nicho médico e modelo de negócios",
         gatilhos: ["Soluções para médicos", "Vendas high ticket para saúde", "Parcerias com foco em profissionais de saúde"]
-      },
-      "drfredericomaia": {
-        nome: "Dr. Frederico Maia",
-        email_comercial: "contato@drfredericomaia.com.br",
-        assessoria: "Equipe Maia Academy",
-        whatsapp_comercial: null,
-        tempo_resposta: "3-5 dias úteis",
-        melhor_abordagem: "Email formal destacando inovação em educação médica",
-        gatilhos: ["Tecnologia em cirurgia", "Formação de elite médica", "Cases de alta performance cirúrgica", "Parcerias com universidades"]
       }
     };
 
