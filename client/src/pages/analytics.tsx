@@ -84,18 +84,19 @@ export default function Analytics() {
     <Layout>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-            <p className="text-muted-foreground">Métricas consolidadas dos experts analisados</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Métricas consolidadas dos experts analisados</p>
           </div>
           <button
             onClick={exportToCSV}
             disabled={totalExperts === 0}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             <Download className="w-4 h-4" />
-            Exportar CSV
+            <span className="hidden sm:inline">Exportar CSV</span>
+            <span className="sm:hidden">CSV</span>
           </button>
         </div>
 
@@ -149,105 +150,112 @@ export default function Analytics() {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Score Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Distribuição por Score</CardTitle>
-              <CardDescription>Quantidade de experts por faixa de pontuação</CardDescription>
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg sm:text-xl">Distribuição por Score</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Quantidade de experts por faixa de pontuação</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  count: { label: "Experts", color: "hsl(var(--chart-1))" }
-                }}
-                className="h-[300px]"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={scoreDistribution}>
-                    <XAxis dataKey="range" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                      {scoreDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+            <CardContent className="p-2 sm:p-6">
+              <div className="w-full h-[250px] sm:h-[300px]">
+                <ChartContainer
+                  config={{
+                    count: { label: "Experts", color: "hsl(var(--chart-1))" }
+                  }}
+                  className="w-full h-full"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={scoreDistribution} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                      <XAxis dataKey="range" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                        {scoreDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </div>
             </CardContent>
           </Card>
 
           {/* Qualification Pie Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Status de Qualificação</CardTitle>
-              <CardDescription>Proporção de experts qualificados vs. desqualificados</CardDescription>
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg sm:text-xl">Status de Qualificação</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Proporção de experts qualificados vs. desqualificados</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  qualified: { label: "Qualificados", color: "#22c55e" },
-                  unqualified: { label: "Desqualificados", color: "#ef4444" }
-                }}
-                className="h-[300px]"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={qualificationData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {qualificationData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+            <CardContent className="p-2 sm:p-6">
+              <div className="w-full h-[250px] sm:h-[300px]">
+                <ChartContainer
+                  config={{
+                    qualified: { label: "Qualificados", color: "#22c55e" },
+                    unqualified: { label: "Desqualificados", color: "#ef4444" }
+                  }}
+                  className="w-full h-full"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={qualificationData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => {
+                          const isMobile = window.innerWidth < 640;
+                          return isMobile ? `${(percent * 100).toFixed(0)}%` : `${name}: ${(percent * 100).toFixed(0)}%`;
+                        }}
+                        outerRadius={window.innerWidth < 640 ? 70 : 100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {qualificationData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Top 5 Experts */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Top 5 Experts</CardTitle>
-            <CardDescription>Experts com melhor pontuação</CardDescription>
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg sm:text-xl">Top 5 Experts</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Experts com melhor pontuação</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="p-2 sm:p-6">
+            <div className="space-y-2 sm:space-y-3">
               {topExperts.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
+                <p className="text-xs sm:text-sm text-muted-foreground text-center py-4">
                   Nenhum expert analisado ainda
                 </p>
               ) : (
                 topExperts.map((expert, index) => (
                   <div
                     key={expert.handle}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
+                    className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-xs sm:text-sm flex-shrink-0">
                         #{index + 1}
                       </div>
-                      <span className="font-medium">{expert.handle}</span>
+                      <span className="font-medium text-sm sm:text-base truncate">{expert.handle}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className={`px-2 sm:px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
                         expert.score >= 90 ? "bg-green-500/20 text-green-400" :
                         expert.score >= 70 ? "bg-yellow-500/20 text-yellow-400" :
                         "bg-red-500/20 text-red-400"
                       }`}>
-                        {expert.score}/100
+                        {expert.score}<span className="hidden sm:inline">/100</span>
                       </div>
                     </div>
                   </div>
