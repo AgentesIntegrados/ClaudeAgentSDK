@@ -22,6 +22,13 @@ const analyzeExpertFit = tool(
       "Estrutura de vendas"
     ];
     
+    // ⚠️ SIMULAÇÃO - Em produção, substituir por integração real com:
+    // - Instagram Graph API (requer aprovação Meta)
+    // - Social Blade API
+    // - HypeAuditor API
+    // - Scraping ético de perfis públicos
+    // Este é apenas um MOCK para demonstração do fluxo do agente
+    
     const expertData: Record<string, { 
       nome: string;
       nicho: string;
