@@ -118,114 +118,142 @@ const roadmapItems: RoadmapItem[] = [
   },
   {
     id: "9",
-    title: "Sequência de Follow-up Automático",
-    description: "Emails automáticos personalizados baseados no score e nicho do expert",
+    title: "CRM de Leads Qualificados",
+    description: "Sistema de gestão de relacionamento com experts prospectados",
     status: "planned",
     category: "feature",
     technical_details: [
-      "3 templates de email por faixa de score (70-80, 80-90, 90+)",
-      "Personalização com dados do expert (nicho, infoprodutos, autoridade)",
-      "Agendamento inteligente: Dia 1, Dia 3, Dia 7, Dia 14",
-      "Tracking de abertura e cliques (via Resend/SendGrid)",
-      "Stop automático se houver resposta"
+      "Cadastro automático de leads após análise",
+      "Status do funil: Novo → Contato Inicial → Reunião → Proposta → Fechado",
+      "Histórico completo de interações",
+      "Tags personalizadas (Urgente, VIP, Retornar em X dias)",
+      "Integração com email para envio de propostas"
     ]
   },
   {
     id: "10",
-    title: "Pipeline de Qualificação (BANT)",
-    description: "Sistema de scoring baseado em Budget, Authority, Need, Timing",
+    title: "Sequência de Emails Automatizada",
+    description: "Cadência de follow-up automático para nurturing de leads",
     status: "planned",
     category: "feature",
     technical_details: [
-      "Budget: Ticket médio dos infoprodutos (R$ 2k+, R$ 5k+, R$ 10k+)",
-      "Authority: Seguidores, engajamento, menções em mídia",
-      "Need: Nicho alinhado (médicos), gaps identificados",
-      "Timing: Lançamentos recentes, crescimento de seguidores",
-      "Score final: 0-100 com recomendação de abordagem"
+      "Template de email personalizado por nicho",
+      "Sequência: D0 (introdução) → D3 (case) → D7 (proposta)",
+      "Rastreamento de abertura e cliques",
+      "Integração com SendGrid/Resend/Brevo",
+      "Pausa automática se lead responder"
     ]
   },
   {
     id: "11",
-    title: "CRM Integrado com Histórico de Interações",
-    description: "Registro completo de conversas, emails enviados e status de negociação",
+    title: "Agendamento de Reuniões",
+    description: "Integração com calendário para agendamento automático de demos",
     status: "planned",
     category: "feature",
     technical_details: [
-      "Status: Novo Lead → Qualificado → Em Negociação → Ganho/Perdido",
-      "Timeline de interações: emails, DMs, ligações, reuniões",
-      "Notas do SDR sobre cada contato",
-      "Tags personalizadas (Ex: 'Aguardando proposta', 'Interesse alto')",
-      "Exportação para Pipedrive/HubSpot/Salesforce"
+      "Integração com Google Calendar/Cal.com",
+      "Link personalizado de agendamento no email",
+      "Lembretes automáticos (24h e 1h antes)",
+      "Sync bidirecional com CRM",
+      "Timezone automático do prospect"
     ]
   },
   {
     id: "12",
-    title: "Templates de Proposta Comercial",
-    description: "Geração automática de propostas personalizadas com IA",
+    title: "Pipeline de Vendas Visual",
+    description: "Dashboard Kanban para gestão visual do funil comercial",
     status: "planned",
     category: "feature",
     technical_details: [
-      "Claude gera proposta baseada nos dados do expert",
-      "3 modelos: Parceria, Afiliação, White Label",
-      "Cálculo automático de ROI e projeção de faturamento",
-      "Exportação em PDF com design profissional",
-      "Assinatura eletrônica via DocuSign/ClickSign"
+      "Drag-and-drop entre estágios",
+      "Métricas: Taxa de conversão por etapa",
+      "Tempo médio em cada estágio",
+      "Valor estimado do pipeline (forecast)",
+      "Filtros por nicho, score, período"
     ]
   },
   {
     id: "13",
-    title: "Dashboard de Conversão e Métricas",
-    description: "Análise de funil comercial com KPIs de SDR em tempo real",
+    title: "Gerador de Propostas Comerciais",
+    description: "Templates de proposta personalizados por nicho com IA",
     status: "planned",
-    category: "improvement",
+    category: "feature",
     technical_details: [
-      "Taxa de conversão por etapa do funil",
-      "Tempo médio de fechamento",
-      "Ticket médio por parceria fechada",
-      "ROI de cada campanha de outreach",
-      "Gráficos de tendência e comparativo mensal"
+      "Claude gera proposta baseada no perfil do expert",
+      "Calcula ROI estimado (com base em seguidores)",
+      "Exporta em PDF profissional",
+      "Versionamento de propostas",
+      "Assinatura digital integrada (DocuSign)"
     ]
   },
   {
     id: "14",
-    title: "Automação de Agendamento de Reuniões",
-    description: "Integração com Calendly/Google Calendar para agendar calls",
+    title: "Automação de Contratos",
+    description: "Fluxo completo de assinatura e gestão de contratos",
     status: "planned",
     category: "feature",
     technical_details: [
-      "Link de agendamento único por lead",
-      "Sincronização automática com Google Calendar",
-      "Lembrete automático 24h e 1h antes da reunião",
-      "Preparação de briefing da call com dados do expert",
-      "Registro automático da reunião no CRM"
+      "Template de contrato editável",
+      "Integração com DocuSign/PandaDoc",
+      "Notificação de assinatura pendente",
+      "Armazenamento seguro de contratos assinados",
+      "Vencimento e renovação automática"
     ]
   },
   {
     id: "15",
-    title: "Sistema de Pontos de Gatilho (Triggers)",
-    description: "Alertas quando expert realiza ação que indica momento de compra",
+    title: "Sistema de Comissionamento",
+    description: "Controle de comissões da equipe de vendas",
     status: "planned",
     category: "feature",
     technical_details: [
-      "Gatilho 1: Expert lançou novo produto (momento quente)",
-      "Gatilho 2: Crescimento anormal de seguidores (>20%/mês)",
-      "Gatilho 3: Menção em mídia ou prêmio recebido",
-      "Gatilho 4: Expert abriu vaga na equipe (expansão)",
-      "Notificação instantânea ao SDR com sugestão de abordagem"
+      "Cálculo automático de comissão por fechamento",
+      "Regras personalizáveis (% sobre valor, tiering)",
+      "Dashboard de performance individual",
+      "Exportação de relatório para RH/Financeiro",
+      "Integração com ferramentas de pagamento"
     ]
   },
   {
     id: "16",
-    title: "Script de Cold Call com IA",
-    description: "Claude gera roteiro personalizado de ligação baseado no perfil do expert",
+    title: "Integração com WhatsApp Business",
+    description: "Contato direto com leads via WhatsApp automatizado",
+    status: "planned",
+    category: "integration",
+    technical_details: [
+      "API oficial do WhatsApp Business",
+      "Templates de mensagem pré-aprovados",
+      "Envio em massa (respeitando limites)",
+      "Chatbot para qualificação inicial",
+      "Histórico de conversas integrado ao CRM"
+    ]
+  },
+  {
+    id: "17",
+    title: "Análise Preditiva de Fechamento",
+    description: "IA prevê probabilidade de conversão de cada lead",
     status: "planned",
     category: "feature",
     technical_details: [
-      "Análise prévia do tom de voz do expert (bio, posts)",
-      "Objeções previstas e respostas personalizadas",
-      "Gatilhos emocionais específicos do nicho",
-      "Perguntas de descoberta (Discovery Questions)",
-      "Script adaptável em tempo real durante a call"
+      "Machine Learning com histórico de vendas",
+      "Score preditivo (0-100%) de fechamento",
+      "Sugestão de melhor momento para contato",
+      "Identificação de leads 'frios' para remarketing",
+      "Dashboard de leads com maior probabilidade"
+    ]
+  },
+  {
+    id: "18",
+    title: "Sistema de Tarefas e Follow-ups",
+    description: "Gestão de ações comerciais com lembretes inteligentes",
+    status: "planned",
+    category: "feature",
+    technical_details: [
+      "Tarefas automáticas (ex: 'Ligar em 3 dias')",
+      "Lembretes via email/push/Slack",
+      "Integração com calendário",
+      "Priorização baseada em score do lead",
+      "Reatribuição automática se não cumprida"
     ]
   }
 ];
@@ -356,53 +384,29 @@ export default function Roadmap() {
         <div className="mt-8 bg-primary/10 border border-primary/30 rounded-lg p-6">
           <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
-            Roadmap de Evolução
+            Roadmap por Fases
           </h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>✅ <strong>Fase 1 (Atual - Q1 2025):</strong> Sistema funcional com base hardcoded + Cache inteligente</li>
-            <li>🔄 <strong>Fase 2 (Q2 2025):</strong> Integração Instagram Graph API + Analytics avançado</li>
-            <li>⏳ <strong>Fase 3 (Q3 2025):</strong> Fluxo comercial completo (CRM, Follow-up, Propostas)</li>
-            <li>🚀 <strong>Fase 4 (Q4 2025):</strong> Automação SDR full stack (Gatilhos, Cold Call IA, Agendamento)</li>
-            <li>🎯 <strong>Fase 5 (2026):</strong> Integração Social Blade/HypeAuditor + Análise preditiva com ML</li>
+            <li>✅ <strong>Fase 1 (Atual):</strong> Sistema funcional com base hardcoded + Analytics</li>
+            <li>🔄 <strong>Fase 2 (Q2 2025):</strong> Integração Instagram Graph API + CRM Básico</li>
+            <li>⏳ <strong>Fase 3 (Q3 2025):</strong> Pipeline de Vendas + Automação de Emails</li>
+            <li>🚀 <strong>Fase 4 (Q4 2025):</strong> Propostas com IA + Análise Preditiva + WhatsApp</li>
           </ul>
         </div>
 
-        {/* Commercial Flow Summary */}
-        <div className="mt-6 bg-green-500/10 border border-green-500/30 rounded-lg p-6">
-          <h3 className="font-bold text-lg mb-3 text-green-400">🎯 Funcionalidades de Fluxo Comercial</h3>
-          <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-            <div>
-              <h4 className="font-semibold text-foreground mb-2">Automação de Outreach</h4>
-              <ul className="space-y-1 list-disc list-inside">
-                <li>Sequências de email personalizadas</li>
-                <li>Follow-up automático inteligente</li>
-                <li>Templates de proposta com IA</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-2">Gestão de Pipeline</h4>
-              <ul className="space-y-1 list-disc list-inside">
-                <li>CRM integrado com histórico</li>
-                <li>Qualificação BANT automatizada</li>
-                <li>Dashboard de conversão em tempo real</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-2">Gatilhos de Vendas</h4>
-              <ul className="space-y-1 list-disc list-inside">
-                <li>Alertas de momento de compra</li>
-                <li>Monitoramento de lançamentos</li>
-                <li>Crescimento anormal de seguidores</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-2">Ferramentas de Conversão</h4>
-              <ul className="space-y-1 list-disc list-inside">
-                <li>Agendamento automático de calls</li>
-                <li>Scripts de cold call com IA</li>
-                <li>Assinatura eletrônica de contratos</li>
-              </ul>
-            </div>
+        {/* Categorias */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-card border border-border rounded-lg p-4">
+            <h4 className="font-semibold text-sm mb-2 text-blue-400">🔗 Integrações (5)</h4>
+            <p className="text-xs text-muted-foreground">Instagram API, Social Blade, HypeAuditor, Web Scraping, WhatsApp</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-4">
+            <h4 className="font-semibold text-sm mb-2 text-green-400">⚡ Funcionalidades (11)</h4>
+            <p className="text-xs text-muted-foreground">CRM, Pipeline, Propostas, Contratos, Tarefas, Análise Preditiva</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-4">
+            <h4 className="font-semibold text-sm mb-2 text-yellow-400">🎯 Melhorias (2)</h4>
+            <p className="text-xs text-muted-foreground">Cache Inteligente, IA para Sentimento</p>
           </div>
         </div>
       </div>
