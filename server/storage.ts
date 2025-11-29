@@ -143,9 +143,13 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(expertRankings).orderBy(desc(expertRankings.score));
   }
 
+  // Helper para normalizar handles de forma consistente
+  private normalizeHandle(handle: string): string {
+    return handle.replace(/@/g, '').trim().toLowerCase();
+  }
+
   async getExpertRankingByHandle(handle: string): Promise<ExpertRanking | undefined> {
-    const normalizedHandle = handle.replace('@', '').trim().toLowerCase();
-    // Busca por handle normalizado (todos os handles no DB devem estar normalizados)
+    const normalizedHandle = this.normalizeHandle(handle);
     const result = await db.select().from(expertRankings)
       .where(eq(expertRankings.instagramHandle, normalizedHandle))
       .limit(1);
@@ -155,7 +159,7 @@ export class DatabaseStorage implements IStorage {
   async createExpertRanking(ranking: InsertExpertRanking): Promise<ExpertRanking> {
     const normalizedRanking = {
       ...ranking,
-      instagramHandle: ranking.instagramHandle.replace('@', '').toLowerCase()
+      instagramHandle: this.normalizeHandle(ranking.instagramHandle)
     };
     const result = await db.insert(expertRankings).values(normalizedRanking).returning();
     return result[0];
