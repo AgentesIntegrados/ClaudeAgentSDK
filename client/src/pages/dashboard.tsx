@@ -1,11 +1,12 @@
 import Layout from "@/components/layout";
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, Terminal, Check } from "lucide-react";
-import { motion } from "framer-motion";
+import { Send, Bot, User, Sparkles, Terminal, Check, Menu, X, Trophy, Plus, Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchDefaultAgentConfig, fetchMessages, createConversation, sendChatMessage } from "@/lib/api";
+import { fetchDefaultAgentConfig, fetchMessages, createConversation, sendChatMessage, fetchRankings, createRanking, deleteRanking } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import type { ExpertRanking } from "@shared/schema";
 
 interface UIMessage {
   id: string;
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -32,6 +34,33 @@ export default function Dashboard() {
   const { data: agentConfig } = useQuery({
     queryKey: ["agent-config", "default"],
     queryFn: fetchDefaultAgentConfig,
+  });
+
+  // Fetch rankings
+  const { data: rankings = [] } = useQuery({
+    queryKey: ["rankings"],
+    queryFn: fetchRankings,
+  });
+
+  // Create ranking mutation
+  const createRankingMutation = useMutation({
+    mutationFn: createRanking,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rankings"] });
+      toast({ title: "Salvo!", description: "Expert adicionado ao ranking" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Delete ranking mutation
+  const deleteRankingMutation = useMutation({
+    mutationFn: deleteRanking,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rankings"] });
+      toast({ title: "Removido", description: "Expert removido do ranking" });
+    },
   });
 
   // Fetch messages for current conversation
@@ -125,13 +154,148 @@ export default function Dashboard() {
     queryClient.removeQueries({ queryKey: ["messages"] });
   };
 
+  // Extract expert data from tool result and save to ranking
+  const handleSaveToRanking = (toolResult: any) => {
+    if (!toolResult?.analysis) return;
+    
+    const { analysis } = toolResult;
+    createRankingMutation.mutate({
+      instagramHandle: toolResult.instagram_handle || analysis.nome,
+      nome: analysis.nome,
+      nicho: analysis.nicho,
+      publicoAlvo: analysis.publicoAlvo,
+      seguidores: analysis.seguidores,
+      score: analysis.score,
+      qualified: analysis.qualified ? "SIM" : "NAO",
+      infoprodutos: analysis.infoprodutos,
+      comunidade: analysis.comunidade,
+      autoridade: analysis.autoridade,
+      estruturaVendas: analysis.estruturaVendas,
+      analysisData: toolResult,
+    });
+  };
+
+  // Check if expert is already in ranking
+  const isInRanking = (handle: string) => {
+    const normalized = handle.replace('@', '').toLowerCase();
+    return rankings.some(r => r.instagramHandle.toLowerCase() === normalized);
+  };
+
   return (
     <Layout>
-      <div className="h-[calc(100vh-8rem)]">
+      <div className="h-[calc(100vh-8rem)] relative">
+        {/* Ranking Sidebar */}
+        <AnimatePresence>
+          {menuOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black z-40"
+                onClick={() => setMenuOpen(false)}
+              />
+              <motion.div
+                initial={{ x: -320 }}
+                animate={{ x: 0 }}
+                exit={{ x: -320 }}
+                transition={{ type: "spring", damping: 25 }}
+                className="fixed left-0 top-0 h-full w-80 bg-card border-r border-border z-50 flex flex-col"
+              >
+                <div className="p-4 border-b border-border flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    <h2 className="font-bold text-lg">Ranking de Experts</h2>
+                  </div>
+                  <button 
+                    onClick={() => setMenuOpen(false)}
+                    className="p-1 hover:bg-secondary rounded"
+                    data-testid="button-close-menu"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {rankings.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Nenhum expert salvo ainda. Analise perfis e clique em "Salvar no Ranking".
+                    </p>
+                  ) : (
+                    rankings.map((expert, index) => (
+                      <div 
+                        key={expert.id} 
+                        className={cn(
+                          "p-3 rounded-lg border",
+                          expert.qualified === "SIM" ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"
+                        )}
+                        data-testid={`ranking-item-${expert.id}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold text-muted-foreground">#{index + 1}</span>
+                            <div>
+                              <p className="font-semibold text-sm">@{expert.instagramHandle}</p>
+                              <p className="text-xs text-muted-foreground">{expert.nicho || "Nicho não identificado"}</p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => deleteRankingMutation.mutate(expert.id)}
+                            className="p-1 hover:bg-destructive/20 rounded text-muted-foreground hover:text-destructive"
+                            data-testid={`button-delete-ranking-${expert.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className={cn(
+                            "text-xs font-bold px-2 py-0.5 rounded",
+                            expert.qualified === "SIM" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                          )}>
+                            {expert.score}/100
+                          </div>
+                          <span className={cn(
+                            "text-xs",
+                            expert.qualified === "SIM" ? "text-green-400" : "text-red-400"
+                          )}>
+                            {expert.qualified === "SIM" ? "QUALIFICADO" : "NÃO QUALIFICADO"}
+                          </span>
+                        </div>
+                        {expert.seguidores && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {expert.seguidores.toLocaleString()} seguidores
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="p-4 border-t border-border text-center">
+                  <p className="text-xs text-muted-foreground">
+                    {rankings.length} expert{rankings.length !== 1 ? "s" : ""} • 
+                    {rankings.filter(r => r.qualified === "SIM").length} qualificado{rankings.filter(r => r.qualified === "SIM").length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
         {/* Chat Interface */}
         <div className="h-full flex flex-col bg-card border border-border rounded-xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-border flex justify-between items-center bg-card/50 backdrop-blur">
             <div className="flex items-center">
+              <button 
+                onClick={() => setMenuOpen(true)}
+                className="p-2 hover:bg-secondary rounded-lg mr-2 relative"
+                data-testid="button-open-menu"
+              >
+                <Menu className="w-5 h-5" />
+                {rankings.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {rankings.length}
+                  </span>
+                )}
+              </button>
               <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center mr-3">
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
@@ -200,6 +364,26 @@ export default function Dashboard() {
                               {JSON.stringify(msg.toolUse.result, null, 2)}
                             </pre>
                           </details>
+                        </div>
+                      )}
+                      {/* Save to Ranking button */}
+                      {msg.toolUse.tool?.includes("analyze_expert_fit") && msg.toolUse.result?.analysis && (
+                        <div className="pt-2 border-t border-border/50 mt-2">
+                          {isInRanking(msg.toolUse.result.instagram_handle || msg.toolUse.result.analysis?.nome) ? (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Check className="w-3 h-3 text-green-400" /> Já está no ranking
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleSaveToRanking(msg.toolUse?.result)}
+                              disabled={createRankingMutation.isPending}
+                              className="flex items-center gap-1 text-xs bg-primary/20 hover:bg-primary/30 text-primary px-2 py-1 rounded transition-colors disabled:opacity-50"
+                              data-testid="button-save-ranking"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Salvar no Ranking
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

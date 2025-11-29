@@ -1,4 +1,4 @@
-import type { AgentConfig, InsertAgentConfig, Conversation, InsertConversation, Message, InsertMessage } from "@shared/schema";
+import type { AgentConfig, InsertAgentConfig, Conversation, InsertConversation, Message, InsertMessage, ExpertRanking, InsertExpertRanking } from "@shared/schema";
 
 const API_BASE = "/api";
 
@@ -114,4 +114,31 @@ export async function sendChatMessage(conversationId: string, message: string): 
     throw new Error(error.error || "Failed to send message");
   }
   return res.json();
+}
+
+// Expert Rankings
+export async function fetchRankings(): Promise<ExpertRanking[]> {
+  const res = await fetch(`${API_BASE}/rankings`);
+  if (!res.ok) throw new Error("Failed to fetch rankings");
+  return res.json();
+}
+
+export async function createRanking(ranking: InsertExpertRanking): Promise<ExpertRanking> {
+  const res = await fetch(`${API_BASE}/rankings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(ranking),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to create ranking");
+  }
+  return res.json();
+}
+
+export async function deleteRanking(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/rankings/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete ranking");
 }
