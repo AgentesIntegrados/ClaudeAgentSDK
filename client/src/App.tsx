@@ -3,9 +3,9 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth-context";
 import { lazy, Suspense } from "react";
 
-// Lazy load páginas para melhor performance
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const Architecture = lazy(() => import("@/pages/architecture"));
 const LiveLogs = lazy(() => import("@/pages/terminal"));
@@ -14,6 +14,7 @@ const Roadmap = lazy(() => import("@/pages/roadmap"));
 const Analytics = lazy(() => import("@/pages/analytics"));
 const Validation = lazy(() => import("@/pages/validation"));
 const McpServers = lazy(() => import("@/pages/mcp-servers"));
+const Admin = lazy(() => import("@/pages/admin"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 // Componente de loading
@@ -35,6 +36,7 @@ function Router() {
         <Route path="/validation" component={Validation} />
         <Route path="/mcp-servers" component={McpServers} />
         <Route path="/settings" component={Settings} />
+        <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -44,10 +46,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

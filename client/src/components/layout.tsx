@@ -9,43 +9,60 @@ import {
   X,
   BarChart3,
   Beaker,
-  Server
+  Server,
+  Shield,
+  Lock
 } from "lucide-react";
 import { useState, memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
-// Componente memoizado para item de navegação
-const NavItem = memo(({ item, isActive }: { item: any; isActive: boolean }) => (
-  <Link 
-    href={item.href}
-    className={cn(
-      "flex items-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 group cursor-pointer",
-      isActive 
-        ? "bg-sidebar-accent text-primary shadow-sm" 
-        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
-    )}
-  >
-    <item.icon className={cn(
-      "w-5 h-5 mr-3 transition-colors",
-      isActive ? "text-primary" : "text-sidebar-foreground group-hover:text-foreground"
-    )} />
-    {item.label}
-  </Link>
-));
+const NavItem = memo(({ item, isActive, locked }: { item: any; isActive: boolean; locked: boolean }) => {
+  if (locked) {
+    return (
+      <div 
+        className="flex items-center px-4 py-3 rounded-md text-sm font-medium text-muted-foreground/50 cursor-not-allowed select-none"
+      >
+        <Lock className="w-4 h-4 mr-3 opacity-50" />
+        <span className="opacity-50">{item.label}</span>
+      </div>
+    );
+  }
+  
+  return (
+    <Link 
+      href={item.href}
+      className={cn(
+        "flex items-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 group cursor-pointer",
+        isActive 
+          ? "bg-sidebar-accent text-primary shadow-sm" 
+          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+      )}
+    >
+      <item.icon className={cn(
+        "w-5 h-5 mr-3 transition-colors",
+        isActive ? "text-primary" : "text-sidebar-foreground group-hover:text-foreground"
+      )} />
+      {item.label}
+    </Link>
+  );
+});
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const navItems = useMemo(() => [
-    { href: "/", icon: LayoutDashboard, label: "Chat Principal" },
-    { href: "/architecture", icon: FileCode, label: "Especificação de Arquitetura" },
-    { href: "/terminal", icon: Terminal, label: "Logs em Tempo Real" },
-    { href: "/roadmap", icon: Bot, label: "Roadmap" },
-    { href: "/settings", icon: Settings, label: "Configurações" },
-    { href: "/analytics", icon: BarChart3, label: "Analytics" },
-    { href: "/validation", icon: Beaker, label: "Validação do Agente" },
-    { href: "/mcp-servers", icon: Server, label: "MCP Servers" },
+    { href: "/", icon: LayoutDashboard, label: "Chat Principal", requiresAuth: false },
+    { href: "/architecture", icon: FileCode, label: "Especificação de Arquitetura", requiresAuth: true },
+    { href: "/terminal", icon: Terminal, label: "Logs em Tempo Real", requiresAuth: true },
+    { href: "/roadmap", icon: Bot, label: "Roadmap", requiresAuth: true },
+    { href: "/settings", icon: Settings, label: "Configurações", requiresAuth: true },
+    { href: "/analytics", icon: BarChart3, label: "Analytics", requiresAuth: true },
+    { href: "/validation", icon: Beaker, label: "Validação do Agente", requiresAuth: true },
+    { href: "/mcp-servers", icon: Server, label: "MCP Servers", requiresAuth: true },
+    { href: "/admin", icon: Shield, label: "Admin", requiresAuth: true },
   ], []);
 
   return (
@@ -68,6 +85,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               key={item.href} 
               item={item} 
               isActive={location === item.href}
+              locked={item.requiresAuth && !isAuthenticated}
             />
           ))}
         </nav>

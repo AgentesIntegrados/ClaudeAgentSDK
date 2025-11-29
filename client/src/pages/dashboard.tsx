@@ -1,11 +1,12 @@
 import Layout from "@/components/layout";
 import { useState, useRef, useEffect, useCallback, memo } from "react";
-import { Send, Bot, User, Sparkles, Terminal, Check, Menu, X, Trophy, Plus, Trash2 } from "lucide-react";
+import { Send, Bot, User, Sparkles, Terminal, Check, Menu, X, Trophy, Plus, Trash2, Lock, Unlock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchDefaultAgentConfig, fetchMessages, createConversation, sendChatMessage, fetchRankings, createRanking, deleteRanking } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
 import type { ExpertRanking } from "@shared/schema";
 
 interface UIMessage {
@@ -110,9 +111,11 @@ export default function Dashboard() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [passwordAttempts, setPasswordAttempts] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isAuthenticated, login } = useAuth();
 
   // Fetch default agent config
   const { data: agentConfig } = useQuery({
@@ -163,15 +166,38 @@ export default function Dashboard() {
     toolUse: msg.toolUse as any,
   }));
 
-  // Add initial greeting if no messages
-  const displayMessages: UIMessage[] = messages.length === 0 ? [
-    {
-      id: "greeting",
-      role: "agent",
-      content: "Olá! Sou o ExpertBot, especialista em qualificar experts e mentores high ticket. Analiso infoprodutos, comunidade, ticket médio e autoridade. Qual expert devo analisar?",
-      timestamp: new Date()
+  // Password prompt or greeting based on auth status
+  const getInitialMessages = (): UIMessage[] => {
+    if (!isAuthenticated) {
+      const msgs: UIMessage[] = [
+        {
+          id: "password-prompt",
+          role: "agent",
+          content: "🔐 Bem-vindo ao ExpertBot! Para acessar o sistema, digite a senha de acesso.",
+          timestamp: new Date()
+        }
+      ];
+      if (passwordAttempts > 0) {
+        msgs.push({
+          id: "password-error",
+          role: "agent",
+          content: `❌ Senha incorreta. Tente novamente. (Tentativa ${passwordAttempts})`,
+          timestamp: new Date()
+        });
+      }
+      return msgs;
     }
-  ] : messages;
+    return [
+      {
+        id: "greeting",
+        role: "agent",
+        content: "✅ Acesso liberado! Sou o ExpertBot, especialista em qualificar experts e mentores high ticket. Analiso infoprodutos, comunidade, ticket médio e autoridade. Qual expert devo analisar?",
+        timestamp: new Date()
+      }
+    ];
+  };
+
+  const displayMessages: UIMessage[] = messages.length === 0 ? getInitialMessages() : messages;
 
   const createConversationMutation = useMutation({
     mutationFn: createConversation,
@@ -207,10 +233,32 @@ export default function Dashboard() {
   }, [displayMessages]);
 
   const handleSend = useCallback(async () => {
-    if (!input.trim() || !agentConfig) return;
+    if (!input.trim()) return;
 
     const userInput = input;
     setInput("");
+
+    // Handle password authentication
+    if (!isAuthenticated) {
+      const success = login(userInput.trim());
+      if (success) {
+        toast({
+          title: "Acesso liberado!",
+          description: "Bem-vindo ao ExpertBot.",
+        });
+      } else {
+        setPasswordAttempts(prev => prev + 1);
+        toast({
+          title: "Senha incorreta",
+          description: "Tente novamente.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    if (!agentConfig) return;
+
     setIsTyping(true);
 
     try {
@@ -235,7 +283,7 @@ export default function Dashboard() {
     } finally {
       setIsTyping(false);
     }
-  }, [input, agentConfig, conversationId, createConversationMutation, chatMutation]);
+  }, [input, agentConfig, conversationId, createConversationMutation, chatMutation, isAuthenticated, login, toast]);
 
   const handleResetSession = useCallback(() => {
     setConversationId(null);
@@ -481,13 +529,19 @@ export default function Dashboard() {
           {/* Input Area */}
           <div className="p-4 border-t border-border bg-background">
             <div className="relative flex items-center">
+              {!isAuthenticated && (
+                <Lock className="absolute left-4 w-4 h-4 text-muted-foreground" />
+              )}
               <input
-                type="text"
+                type={isAuthenticated ? "text" : "password"}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                placeholder="Digite o @ de um expert/mentor para analisar..."
-                className="w-full bg-secondary/50 border border-input hover:border-primary/50 focus:border-primary rounded-lg py-3 pl-4 pr-12 outline-none transition-colors"
+                placeholder={isAuthenticated ? "Digite o @ de um expert/mentor para analisar..." : "Digite a senha de acesso..."}
+                className={cn(
+                  "w-full bg-secondary/50 border border-input hover:border-primary/50 focus:border-primary rounded-lg py-3 pr-12 outline-none transition-colors",
+                  isAuthenticated ? "pl-4" : "pl-10"
+                )}
                 disabled={isTyping}
                 data-testid="input-message"
               />
@@ -497,11 +551,11 @@ export default function Dashboard() {
                 className="absolute right-2 p-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 data-testid="button-send"
               >
-                <Send className="w-4 h-4" />
+                {isAuthenticated ? <Send className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
               </button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Pressione Enter para enviar • Powered by Claude
+              {isAuthenticated ? "Pressione Enter para enviar • Powered by Claude" : "Digite a senha e pressione Enter"}
             </p>
           </div>
         </div>
