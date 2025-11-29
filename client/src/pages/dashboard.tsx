@@ -215,64 +215,110 @@ export default function Dashboard() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {rankings.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                      Nenhum expert salvo ainda. Analise perfis e clique em "Salvar no Ranking".
+                      Nenhum expert salvo ainda. Experts são salvos automaticamente após análise.
                     </p>
                   ) : (
-                    rankings.map((expert, index) => (
-                      <div 
-                        key={expert.id} 
-                        className={cn(
-                          "p-3 rounded-lg border",
-                          expert.qualified === "SIM" ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"
-                        )}
-                        data-testid={`ranking-item-${expert.id}`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-muted-foreground">#{index + 1}</span>
-                            <div>
-                              <p className="font-semibold text-sm">@{expert.instagramHandle}</p>
-                              <p className="text-xs text-muted-foreground">{expert.nicho || "Nicho não identificado"}</p>
+                    <>
+                      {/* QUALIFICADOS Section */}
+                      {rankings.filter(r => r.score >= 70).length > 0 && (
+                        <div className="space-y-2">
+                          <h3 className="text-xs font-bold text-green-400 flex items-center gap-2">
+                            <Check className="w-3 h-3" />
+                            QUALIFICADOS ({rankings.filter(r => r.score >= 70).length})
+                          </h3>
+                          {rankings
+                            .filter(r => r.score >= 70)
+                            .sort((a, b) => b.score - a.score)
+                            .map((expert, index) => (
+                            <div 
+                              key={expert.id} 
+                              className="p-3 rounded-lg border border-green-500/30 bg-green-500/5"
+                              data-testid={`ranking-item-${expert.id}`}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg font-bold text-green-400">#{index + 1}</span>
+                                  <div>
+                                    <p className="font-semibold text-sm">{expert.instagramHandle}</p>
+                                    <p className="text-xs text-muted-foreground">{expert.nicho || "Nicho não identificado"}</p>
+                                  </div>
+                                </div>
+                                <button 
+                                  onClick={() => deleteRankingMutation.mutate(expert.id)}
+                                  className="p-1 hover:bg-destructive/20 rounded text-muted-foreground hover:text-destructive"
+                                  data-testid={`button-delete-ranking-${expert.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <div className="mt-2 flex items-center gap-2">
+                                <div className="text-xs font-bold px-2 py-0.5 rounded bg-green-500/20 text-green-400">
+                                  {expert.score}/100
+                                </div>
+                                <span className="text-xs text-green-400">QUALIFICADO</span>
+                              </div>
+                              {expert.seguidores && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {expert.seguidores.toLocaleString()} seguidores
+                                </p>
+                              )}
                             </div>
-                          </div>
-                          <button 
-                            onClick={() => deleteRankingMutation.mutate(expert.id)}
-                            className="p-1 hover:bg-destructive/20 rounded text-muted-foreground hover:text-destructive"
-                            data-testid={`button-delete-ranking-${expert.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          ))}
                         </div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <div className={cn(
-                            "text-xs font-bold px-2 py-0.5 rounded",
-                            expert.qualified === "SIM" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
-                          )}>
-                            {expert.score}/100
-                          </div>
-                          <span className={cn(
-                            "text-xs",
-                            expert.qualified === "SIM" ? "text-green-400" : "text-red-400"
-                          )}>
-                            {expert.qualified === "SIM" ? "QUALIFICADO" : "NÃO QUALIFICADO"}
-                          </span>
+                      )}
+                      
+                      {/* DESQUALIFICADOS Section */}
+                      {rankings.filter(r => r.score < 70).length > 0 && (
+                        <div className="space-y-2 mt-4">
+                          <h3 className="text-xs font-bold text-red-400 flex items-center gap-2">
+                            <X className="w-3 h-3" />
+                            DESQUALIFICADOS ({rankings.filter(r => r.score < 70).length})
+                          </h3>
+                          {rankings
+                            .filter(r => r.score < 70)
+                            .sort((a, b) => b.score - a.score)
+                            .map((expert) => (
+                            <div 
+                              key={expert.id} 
+                              className="p-3 rounded-lg border border-red-500/30 bg-red-500/5 opacity-75"
+                              data-testid={`ranking-item-${expert.id}`}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-2">
+                                  <div>
+                                    <p className="font-semibold text-sm">{expert.instagramHandle}</p>
+                                    <p className="text-xs text-muted-foreground">{expert.nicho || "Nicho não identificado"}</p>
+                                  </div>
+                                </div>
+                                <button 
+                                  onClick={() => deleteRankingMutation.mutate(expert.id)}
+                                  className="p-1 hover:bg-destructive/20 rounded text-muted-foreground hover:text-destructive"
+                                  data-testid={`button-delete-ranking-${expert.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <div className="mt-2 flex items-center gap-2">
+                                <div className="text-xs font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-400">
+                                  {expert.score}/100
+                                </div>
+                                <span className="text-xs text-red-400">NÃO QUALIFICADO</span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        {expert.seguidores && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {expert.seguidores.toLocaleString()} seguidores
-                          </p>
-                        )}
-                      </div>
-                    ))
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="p-4 border-t border-border text-center">
                   <p className="text-xs text-muted-foreground">
-                    {rankings.length} expert{rankings.length !== 1 ? "s" : ""} • 
-                    {rankings.filter(r => r.qualified === "SIM").length} qualificado{rankings.filter(r => r.qualified === "SIM").length !== 1 ? "s" : ""}
+                    {rankings.length} expert{rankings.length !== 1 ? "s" : ""} | 
+                    <span className="text-green-400"> {rankings.filter(r => r.score >= 70).length} qualificado{rankings.filter(r => r.score >= 70).length !== 1 ? "s" : ""}</span> |
+                    <span className="text-red-400"> {rankings.filter(r => r.score < 70).length} desqualificado{rankings.filter(r => r.score < 70).length !== 1 ? "s" : ""}</span>
                   </p>
                 </div>
               </motion.div>
