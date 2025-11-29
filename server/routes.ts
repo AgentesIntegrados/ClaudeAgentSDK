@@ -231,7 +231,8 @@ export async function registerRoutes(
       });
 
       // AUTO-SAVE: Salvar automaticamente no ranking após análise
-      if (agentResponse.toolUse && agentResponse.toolUse.tool === "mcp__sdr__analyze_expert_fit") {
+      let savedToRanking = false;
+      if (agentResponse.toolUse && agentResponse.toolUse.tool.endsWith("analyze_expert_fit")) {
         try {
           const toolResult = agentResponse.toolUse.result as any;
           if (toolResult && toolResult.analysis) {
@@ -241,7 +242,9 @@ export async function registerRoutes(
               score: number; 
               qualified?: boolean;
             };
-            const instagramHandle = String(toolResult.instagram_handle || `@${analysis.nome}`);
+            // Normaliza o handle: remove @ e espaços, lowercase
+            const rawHandle = String(toolResult.instagram_handle || analysis.nome);
+            const instagramHandle = rawHandle.replace('@', '').trim().toLowerCase();
             
             // Verifica se já existe no ranking
             const existing = await storage.getExpertRankingByHandle(instagramHandle);
@@ -254,8 +257,10 @@ export async function registerRoutes(
                 qualified: (analysis.qualified ?? (analysis.score >= 70)) ? "SIM" : "NAO",
                 analysisData: toolResult,
               });
+              savedToRanking = true;
               broadcastLog("RANKING", `Expert ${instagramHandle} salvo automaticamente no ranking (Score: ${analysis.score})`);
             } else {
+              savedToRanking = true; // Already exists, also flag as in ranking
               broadcastLog("RANKING", `Expert ${instagramHandle} já existe no ranking`);
             }
           }
@@ -269,6 +274,7 @@ export async function registerRoutes(
         userMessage,
         agentMessage,
         toolUse: agentResponse.toolUse,
+        savedToRanking, // Flag para frontend saber que precisa atualizar rankings
       });
 
     } catch (error: any) {

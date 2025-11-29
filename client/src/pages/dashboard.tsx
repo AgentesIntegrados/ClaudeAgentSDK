@@ -100,8 +100,12 @@ export default function Dashboard() {
   const chatMutation = useMutation({
     mutationFn: ({ conversationId, message }: { conversationId: string; message: string }) => 
       sendChatMessage(conversationId, message),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      // Auto-refresh rankings se expert foi salvo automaticamente
+      if (data?.savedToRanking) {
+        queryClient.invalidateQueries({ queryKey: ["rankings"] });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -175,10 +179,10 @@ export default function Dashboard() {
     });
   };
 
-  // Check if expert is already in ranking
+  // Check if expert is already in ranking (normaliza ambos para comparação)
   const isInRanking = (handle: string) => {
-    const normalized = handle.replace('@', '').toLowerCase();
-    return rankings.some(r => r.instagramHandle.toLowerCase() === normalized);
+    const normalized = handle.replace('@', '').trim().toLowerCase();
+    return rankings.some(r => r.instagramHandle.replace('@', '').trim().toLowerCase() === normalized);
   };
 
   return (

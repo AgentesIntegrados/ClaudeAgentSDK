@@ -101,6 +101,7 @@ export interface ChatResponse {
     status: "completed";
     result: any;
   };
+  savedToRanking?: boolean;
 }
 
 export async function sendChatMessage(conversationId: string, message: string): Promise<ChatResponse> {
