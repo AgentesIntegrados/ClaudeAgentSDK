@@ -10,14 +10,33 @@ import {
   BarChart3,
   Beaker
 } from "lucide-react";
-import { useState } from "react";
+import { useState, memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
+
+// Componente memoizado para item de navegação
+const NavItem = memo(({ item, isActive }: { item: any; isActive: boolean }) => (
+  <Link 
+    href={item.href}
+    className={cn(
+      "flex items-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 group cursor-pointer",
+      isActive 
+        ? "bg-sidebar-accent text-primary shadow-sm" 
+        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+    )}
+  >
+    <item.icon className={cn(
+      "w-5 h-5 mr-3 transition-colors",
+      isActive ? "text-primary" : "text-sidebar-foreground group-hover:text-foreground"
+    )} />
+    {item.label}
+  </Link>
+));
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navItems = [
+  const navItems = useMemo(() => [
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/architecture", icon: FileCode, label: "Especificação de Arquitetura" },
     { href: "/terminal", icon: Terminal, label: "Logs em Tempo Real" },
@@ -25,7 +44,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/settings", icon: Settings, label: "Configurações" },
     { href: "/analytics", icon: BarChart3, label: "Analytics" },
     { href: "/validation", icon: Beaker, label: "Validação do Agente" },
-  ];
+  ], []);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex font-sans selection:bg-primary/20 selection:text-primary">
@@ -42,27 +61,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="p-4 space-y-1">
-          {navItems.map((item) => {
-            const isActive = location === item.href;
-            return (
-              <Link 
-                key={item.href} 
-                href={item.href}
-                className={cn(
-                  "flex items-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 group cursor-pointer",
-                  isActive 
-                    ? "bg-sidebar-accent text-primary shadow-sm" 
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
-                )}
-              >
-                <item.icon className={cn(
-                  "w-5 h-5 mr-3 transition-colors",
-                  isActive ? "text-primary" : "text-sidebar-foreground group-hover:text-foreground"
-                )} />
-                {item.label}
-              </Link>
-            );
-          })}
+          {navItems.map((item) => (
+            <NavItem 
+              key={item.href} 
+              item={item} 
+              isActive={location === item.href}
+            />
+          ))}
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-sidebar-border">

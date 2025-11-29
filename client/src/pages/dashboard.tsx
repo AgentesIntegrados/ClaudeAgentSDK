@@ -1,5 +1,5 @@
 import Layout from "@/components/layout";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { Send, Bot, User, Sparkles, Terminal, Check, Menu, X, Trophy, Plus, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,90 @@ interface UIMessage {
     result?: any;
   };
 }
+
+// Componente memoizado para mensagem individual
+const MessageItem = memo(({ 
+  msg, 
+  onSaveToRanking, 
+  isInRanking 
+}: { 
+  msg: UIMessage; 
+  onSaveToRanking: (toolResult: any) => void;
+  isInRanking: (handle: string) => boolean;
+}) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "flex gap-3 max-w-[85%]",
+        msg.role === "user" ? "ml-auto flex-row-reverse" : ""
+      )}
+    >
+      <div className={cn(
+        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+        msg.role === "user" ? "bg-primary" : "bg-secondary"
+      )}>
+        {msg.role === "user" ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4" />}
+      </div>
+      
+      <div className="space-y-2">
+        <div className={cn(
+          "p-3 rounded-lg text-sm leading-relaxed shadow-sm",
+          msg.role === "user" 
+            ? "bg-primary text-primary-foreground rounded-tr-none" 
+            : "bg-secondary text-secondary-foreground rounded-tl-none"
+        )}>
+          {msg.content}
+        </div>
+
+        {msg.toolUse && (
+          <div className="bg-background border border-border rounded-md p-3 text-xs font-mono space-y-2 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center text-muted-foreground">
+              <Terminal className="w-3 h-3 mr-2" />
+              <span>Executou: {msg.toolUse.tool}</span>
+            </div>
+            <div className="opacity-70 pl-5 border-l-2 border-border/50">
+              input: {msg.toolUse.input}
+            </div>
+            <div className="text-green-400 pl-5 border-l-2 border-green-500/30 flex items-center gap-2">
+              <Check className="w-3 h-3" />
+              Concluído
+            </div>
+            {msg.toolUse.result && (
+              <div className="text-muted-foreground pl-5 border-l-2 border-border/50 mt-1">
+                <details className="cursor-pointer">
+                  <summary className="text-xs hover:text-foreground">Ver resultado</summary>
+                  <pre className="mt-2 text-xs overflow-auto max-h-32 bg-background/50 p-2 rounded">
+                    {JSON.stringify(msg.toolUse.result, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            )}
+            {msg.toolUse.tool?.includes("analyze_expert_fit") && msg.toolUse.result?.analysis && (
+              <div className="pt-2 border-t border-border/50 mt-2">
+                {isInRanking(msg.toolUse.result.instagram_handle || msg.toolUse.result.analysis?.nome) ? (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Check className="w-3 h-3 text-green-400" /> Já está no ranking
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => onSaveToRanking(msg.toolUse?.result)}
+                    className="flex items-center gap-1 text-xs bg-primary/20 hover:bg-primary/30 text-primary px-2 py-1 rounded transition-colors"
+                    data-testid="button-save-ranking"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Salvar no Ranking
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+});
 
 export default function Dashboard() {
   const [input, setInput] = useState("");
@@ -122,7 +206,7 @@ export default function Dashboard() {
     }
   }, [displayMessages]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim() || !agentConfig) return;
 
     const userInput = input;
@@ -151,22 +235,20 @@ export default function Dashboard() {
     } finally {
       setIsTyping(false);
     }
-  };
+  }, [input, agentConfig, conversationId, createConversationMutation, chatMutation]);
 
-  const handleResetSession = () => {
+  const handleResetSession = useCallback(() => {
     setConversationId(null);
     queryClient.removeQueries({ queryKey: ["messages"] });
-  };
+  }, [queryClient]);
 
   // Extract expert data from tool result and save to ranking
-  const handleSaveToRanking = (toolResult: any) => {
+  const handleSaveToRanking = useCallback((toolResult: any) => {
     if (!toolResult?.analysis) return;
     
     const { analysis } = toolResult;
-    // Normaliza handle: remove @, trim, lowercase
     const rawHandle = String(toolResult.instagram_handle || analysis.nome);
     const normalizedHandle = rawHandle.replace('@', '').trim().toLowerCase();
-    // Deriva qualified de forma consistente: score >= 70
     const isQualified = analysis.qualified ?? (analysis.score >= 70);
     
     createRankingMutation.mutate({
@@ -183,13 +265,13 @@ export default function Dashboard() {
       estruturaVendas: analysis.estruturaVendas,
       analysisData: toolResult,
     });
-  };
+  }, [createRankingMutation]);
 
-  // Check if expert is already in ranking (normaliza ambos para comparação)
-  const isInRanking = (handle: string) => {
+  // Check if expert is already in ranking
+  const isInRanking = useCallback((handle: string) => {
     const normalized = handle.replace('@', '').trim().toLowerCase();
     return rankings.some(r => r.instagramHandle.replace('@', '').trim().toLowerCase() === normalized);
-  };
+  }, [rankings]);
 
   return (
     <Layout>
@@ -372,80 +454,12 @@ export default function Dashboard() {
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
             {displayMessages.map((msg) => (
-              <motion.div 
-                key={msg.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={cn(
-                  "flex gap-3 max-w-[85%]",
-                  msg.role === "user" ? "ml-auto flex-row-reverse" : ""
-                )}
-              >
-                <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                  msg.role === "user" ? "bg-primary" : "bg-secondary"
-                )}>
-                  {msg.role === "user" ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4" />}
-                </div>
-                
-                <div className="space-y-2">
-                  <div className={cn(
-                    "p-3 rounded-lg text-sm leading-relaxed shadow-sm",
-                    msg.role === "user" 
-                      ? "bg-primary text-primary-foreground rounded-tr-none" 
-                      : "bg-secondary text-secondary-foreground rounded-tl-none"
-                  )}>
-                    {msg.content}
-                  </div>
-
-                  {/* Tool Execution Visualization */}
-                  {msg.toolUse && (
-                    <div className="bg-background border border-border rounded-md p-3 text-xs font-mono space-y-2 animate-in fade-in slide-in-from-top-2">
-                      <div className="flex items-center text-muted-foreground">
-                        <Terminal className="w-3 h-3 mr-2" />
-                        <span>Executou: {msg.toolUse.tool}</span>
-                      </div>
-                      <div className="opacity-70 pl-5 border-l-2 border-border/50">
-                        input: {msg.toolUse.input}
-                      </div>
-                      <div className="text-green-400 pl-5 border-l-2 border-green-500/30 flex items-center gap-2">
-                        <Check className="w-3 h-3" />
-                        Concluído
-                      </div>
-                      {msg.toolUse.result && (
-                        <div className="text-muted-foreground pl-5 border-l-2 border-border/50 mt-1">
-                          <details className="cursor-pointer">
-                            <summary className="text-xs hover:text-foreground">Ver resultado</summary>
-                            <pre className="mt-2 text-xs overflow-auto max-h-32 bg-background/50 p-2 rounded">
-                              {JSON.stringify(msg.toolUse.result, null, 2)}
-                            </pre>
-                          </details>
-                        </div>
-                      )}
-                      {/* Save to Ranking button */}
-                      {msg.toolUse.tool?.includes("analyze_expert_fit") && msg.toolUse.result?.analysis && (
-                        <div className="pt-2 border-t border-border/50 mt-2">
-                          {isInRanking(msg.toolUse.result.instagram_handle || msg.toolUse.result.analysis?.nome) ? (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Check className="w-3 h-3 text-green-400" /> Já está no ranking
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleSaveToRanking(msg.toolUse?.result)}
-                              disabled={createRankingMutation.isPending}
-                              className="flex items-center gap-1 text-xs bg-primary/20 hover:bg-primary/30 text-primary px-2 py-1 rounded transition-colors disabled:opacity-50"
-                              data-testid="button-save-ranking"
-                            >
-                              <Plus className="w-3 h-3" />
-                              Salvar no Ranking
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
+              <MessageItem 
+                key={msg.id} 
+                msg={msg} 
+                onSaveToRanking={handleSaveToRanking}
+                isInRanking={isInRanking}
+              />
             ))}
             
             {isTyping && (
