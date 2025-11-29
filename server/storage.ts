@@ -145,9 +145,9 @@ export class DatabaseStorage implements IStorage {
 
   async getExpertRankingByHandle(handle: string): Promise<ExpertRanking | undefined> {
     const normalizedHandle = handle.replace('@', '').trim().toLowerCase();
-    // Usa LOWER e REPLACE para busca case-insensitive que também ignora '@'
+    // Busca por handle normalizado (todos os handles no DB devem estar normalizados)
     const result = await db.select().from(expertRankings)
-      .where(sql`LOWER(REPLACE(${expertRankings.instagramHandle}, '@', '')) = ${normalizedHandle}`)
+      .where(eq(expertRankings.instagramHandle, normalizedHandle))
       .limit(1);
     return result[0];
   }
