@@ -11,7 +11,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
   // Agent Configs
   app.get("/api/agent-configs", async (req, res) => {
     try {
@@ -171,9 +171,9 @@ export async function registerRoutes(
   app.post("/api/chat", async (req, res) => {
     try {
       const { conversationId, message } = chatRequestSchema.parse(req.body);
-      
+
       broadcastLog("INFO", "Nova mensagem recebida do usuário", { preview: message.substring(0, 50) });
-      
+
       const conversation = await storage.getConversation(conversationId);
       if (!conversation) {
         broadcastLog("ERROR", "Conversa não encontrada", { conversationId });
@@ -204,7 +204,7 @@ export async function registerRoutes(
         }));
 
       broadcastLog("AGENT", "Enviando requisição para Claude API...");
-      
+
       const agentResponse = await processAgentMessage(
         message,
         agentConfig.systemPrompt,
@@ -246,7 +246,7 @@ export async function registerRoutes(
             // Normaliza o handle: remove @ e espaços, lowercase
             const rawHandle = String(toolResult.instagram_handle || analysis.nome);
             const instagramHandle = rawHandle.replace('@', '').trim().toLowerCase();
-            
+
             // Verifica se já existe no ranking
             const existing = await storage.getExpertRankingByHandle(instagramHandle);
             if (!existing) {
@@ -357,6 +357,41 @@ export async function registerRoutes(
       res.json({ message: `Cache invalidated for ${handle}` });
     } catch (error) {
       res.status(500).json({ error: "Failed to invalidate cache" });
+    }
+  });
+
+  // File System - Read file contents dynamically
+  app.get("/api/files/content", async (req, res) => {
+    try {
+      const { path } = req.query;
+      if (!path || typeof path !== "string") {
+        return res.status(400).json({ error: "Path parameter required" });
+      }
+
+      // Security: only allow reading project files
+      const allowedPaths = [
+        "client/src/",
+        "server/",
+        "shared/",
+        "package.json",
+        "tsconfig.json",
+        "README.md",
+        "replit.md"
+      ];
+
+      const isAllowed = allowedPaths.some(allowed => 
+        path.startsWith(allowed) || path === allowed
+      );
+
+      if (!isAllowed) {
+        return res.status(403).json({ error: "Access denied to this path" });
+      }
+
+      const fs = await import("fs/promises");
+      const content = await fs.readFile(path, "utf-8");
+      res.json({ path, content });
+    } catch (error) {
+      res.status(404).json({ error: "File not found" });
     }
   });
 

@@ -143,3 +143,10 @@ export async function deleteRanking(id: string): Promise<void> {
   });
   if (!res.ok) throw new Error("Failed to delete ranking");
 }
+
+// File System
+export async function fetchFileContent(path: string): Promise<{ path: string; content: string }> {
+  const res = await fetch(`${API_BASE}/files/content?path=${encodeURIComponent(path)}`);
+  if (!res.ok) throw new Error("Failed to fetch file content");
+  return res.json();
+}
