@@ -5,7 +5,7 @@ const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
 const analyzeExpertFit = tool(
   'analyze_expert_fit',
-  'Analisa o perfil de um expert/mentor que vende cursos high ticket para verificar se ele se encaixa no ICP. Avalia: infoproduto estruturado, nicho definido (foco em profissionais como médicos, advogados), comunidade paga (mín 500 membros), ticket médio (acima de R$1.000), autoridade no nicho, estrutura de vendas.',
+  'Analisa o perfil de um expert/mentor que vende cursos high ticket para verificar se ele se encaixa no ICP. Avalia: infoproduto estruturado, nicho definido (foco EXCLUSIVO em médicos), comunidade paga (mín 500 membros), ticket médio (acima de R$1.000), autoridade no nicho, estrutura de vendas.',
   {
     instagram_handle: z.string().describe("O @ do Instagram do expert/mentor (ex: '@nandamac' ou 'nandamac')"),
     criteria: z.array(z.string()).optional().describe("Critérios adicionais de qualificação")
@@ -15,7 +15,7 @@ const analyzeExpertFit = tool(
     const handle = (args.instagram_handle || "unknown").replace('@', '');
     const criteria = args.criteria || [
       "Infoproduto estruturado",
-      "Nicho definido",
+      "Nicho definido (médicos)",
       "Comunidade paga 500+",
       "Ticket > R$1.000",
       "Autoridade no nicho",
@@ -42,8 +42,8 @@ const analyzeExpertFit = tool(
     }> = {
       "nandamac": {
         nome: "Nanda Mac Dowell",
-        nicho: "Vendas High Ticket para Profissionais de Saúde",
-        publicoAlvo: "Médicos, dentistas, psicólogos, nutricionistas, fisioterapeutas",
+        nicho: "Vendas High Ticket para Médicos",
+        publicoAlvo: "Médicos",
         seguidores: 180000,
         infoprodutos: [
           { nome: "Consultório High Ticket", tipo: "Curso com 7 módulos", ticketMedio: "R$ 2.997" },
@@ -58,7 +58,7 @@ const analyzeExpertFit = tool(
       "naborges": {
         nome: "Natanael Borges",
         nicho: "Vendas High Ticket",
-        publicoAlvo: "Empreendedores, coaches, consultores",
+        publicoAlvo: "Empreendedores e consultores (NÃO médicos)",
         seguidores: 520000,
         infoprodutos: [
           { nome: "Método Vendas High Ticket", tipo: "Curso online", ticketMedio: "R$ 1.997" },
@@ -73,7 +73,7 @@ const analyzeExpertFit = tool(
       "ladeirarodrigo": {
         nome: "Rodrigo Ladeira",
         nicho: "Marketing Digital e Lançamentos",
-        publicoAlvo: "Infoprodutores, experts digitais",
+        publicoAlvo: "Infoprodutores e experts digitais (NÃO médicos)",
         seguidores: 380000,
         infoprodutos: [
           { nome: "Fórmula de Lançamento Adaptada", tipo: "Curso completo", ticketMedio: "R$ 2.497" },
@@ -87,7 +87,7 @@ const analyzeExpertFit = tool(
       "natanaelliveira": {
         nome: "Natanael Oliveira",
         nicho: "Negócios Digitais e Infoprodutos",
-        publicoAlvo: "Empreendedores digitais iniciantes e intermediários",
+        publicoAlvo: "Empreendedores digitais (NÃO médicos)",
         seguidores: 450000,
         infoprodutos: [
           { nome: "Máquina de Vendas Online", tipo: "Curso + Comunidade", ticketMedio: "R$ 1.497" },
@@ -101,7 +101,7 @@ const analyzeExpertFit = tool(
       "joaofinancas": {
         nome: "João Victorino",
         nicho: "Educação Financeira",
-        publicoAlvo: "Profissionais que querem organizar finanças e investir",
+        publicoAlvo: "Profissionais em geral (NÃO médicos)",
         seguidores: 290000,
         infoprodutos: [
           { nome: "Método Investidor Inteligente", tipo: "Curso online", ticketMedio: "R$ 997" },
@@ -129,7 +129,7 @@ const analyzeExpertFit = tool(
       "drleandrotwin": {
         nome: "Dr. Leandro Twin",
         nicho: "Saúde, Fitness e Medicina Esportiva",
-        publicoAlvo: "Médicos, nutricionistas, personal trainers",
+        publicoAlvo: "Médicos e profissionais de fitness",
         seguidores: 2800000,
         infoprodutos: [
           { nome: "Curso Prescrição do Exercício", tipo: "Curso para profissionais", ticketMedio: "R$ 1.497" },
@@ -205,12 +205,10 @@ const analyzeExpertFit = tool(
       riskFactors.push("Sem infoprodutos estruturados identificados");
     }
 
-    if (expert.publicoAlvo.toLowerCase().includes("médico") || 
-        expert.publicoAlvo.toLowerCase().includes("saúde") ||
-        expert.publicoAlvo.toLowerCase().includes("profissionais")) {
+    if (expert.publicoAlvo.toLowerCase().includes("médico")) {
       qualificationReasons.push(`Nicho definido com público premium: ${expert.publicoAlvo}`);
     } else if (expert.nicho !== "Não identificado") {
-      qualificationReasons.push(`Nicho: ${expert.nicho} | Público: ${expert.publicoAlvo}`);
+      riskFactors.push(`Público-alvo NÃO é médico: ${expert.publicoAlvo}`);
     } else {
       riskFactors.push("Nicho não definido claramente");
     }

@@ -20,13 +20,13 @@ Qualificar EXPERTS e MENTORES brasileiros que vendem CURSOS HIGH TICKET para pro
 
 # ICP (Perfil de Cliente Ideal)
 Experts como a Nanda Mac (nandamac.com) que:
-- Vendem infoprodutos HIGH TICKET para PROFISSIONAIS (médicos, advogados, etc)
+- Vendem infoprodutos HIGH TICKET para MÉDICOS
 - Têm método estruturado com módulos
 - Possuem comunidade paga ativa
 
 # Critérios de Qualificação (Score mínimo: 70/100)
 1. **Infoproduto estruturado**: Curso/mentoria com módulos (não só conteúdo grátis)
-2. **Nicho definido**: Atende público específico (profissionais de saúde, advogados, coaches)
+2. **Nicho definido**: Atende EXCLUSIVAMENTE médicos
 3. **Comunidade paga**: Grupo/comunidade de alunos (mínimo 500 membros)
 4. **Ticket médio**: Produtos acima de R$1.000
 5. **Autoridade**: Referência no nicho (palestras, podcasts, lives)
