@@ -15,16 +15,19 @@ interface RoadmapItem {
 const roadmapItems: RoadmapItem[] = [
   {
     id: "1",
-    title: "Sistema de Análise Hardcoded",
-    description: "Base de dados local com perfis pré-analisados de experts brasileiros",
-    status: "completed",
+    title: "Sistema de Análise Hardcoded (PROVISÓRIO)",
+    description: "Base de dados local temporária - será removida quando o agente estiver 100% validado",
+    status: "in_progress",
     category: "feature",
     complexity: "simple",
     technical_details: [
       "🟢 Complexidade: SIMPLES (1-2 dias)",
+      "⚠️ PROVISÓRIO: Usado enquanto validamos o agente",
       "Dicionário local em server/claude.ts",
       "Análise instantânea sem API externa",
-      "Limitado aos perfis cadastrados manualmente"
+      "Limitado aos perfis cadastrados manualmente",
+      "➡️ Use 'Validação do Agente' no menu para testar",
+      "🎯 Objetivo: Remover quando todos os testes passarem"
     ]
   },
   {

@@ -7,7 +7,8 @@ import {
   Bot, 
   Menu,
   X,
-  BarChart3
+  BarChart3,
+  Beaker
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/roadmap", icon: Bot, label: "Roadmap" },
     { href: "/settings", icon: Settings, label: "Configurações" },
     { href: "/analytics", icon: BarChart3, label: "Analytics" },
+    { href: "/validation", icon: Beaker, label: "Validação do Agente" },
   ];
 
   return (

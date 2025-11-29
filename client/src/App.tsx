@@ -10,6 +10,7 @@ import LiveLogs from "@/pages/terminal";
 import Settings from "@/pages/settings";
 import Roadmap from "@/pages/roadmap";
 import Analytics from "@/pages/analytics";
+import Validation from "@/pages/validation";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/terminal" component={LiveLogs} />
       <Route path="/roadmap" component={Roadmap} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/validation" component={Validation} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
