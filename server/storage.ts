@@ -7,10 +7,13 @@ import {
   type InsertConversation,
   type Message,
   type InsertMessage,
+  type ExpertRanking,
+  type InsertExpertRanking,
   users,
   agentConfigs,
   conversations,
-  messages
+  messages,
+  expertRankings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -38,6 +41,12 @@ export interface IStorage {
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   updateMessage(id: string, updates: Partial<InsertMessage>): Promise<Message | undefined>;
+  
+  // Expert Rankings
+  getAllExpertRankings(): Promise<ExpertRanking[]>;
+  getExpertRankingByHandle(handle: string): Promise<ExpertRanking | undefined>;
+  createExpertRanking(ranking: InsertExpertRanking): Promise<ExpertRanking>;
+  deleteExpertRanking(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -127,6 +136,30 @@ export class DatabaseStorage implements IStorage {
       .where(eq(messages.id, id))
       .returning();
     return result[0];
+  }
+
+  // Expert Rankings
+  async getAllExpertRankings(): Promise<ExpertRanking[]> {
+    return db.select().from(expertRankings).orderBy(desc(expertRankings.score));
+  }
+
+  async getExpertRankingByHandle(handle: string): Promise<ExpertRanking | undefined> {
+    const normalizedHandle = handle.replace('@', '').toLowerCase();
+    const result = await db.select().from(expertRankings).where(eq(expertRankings.instagramHandle, normalizedHandle)).limit(1);
+    return result[0];
+  }
+
+  async createExpertRanking(ranking: InsertExpertRanking): Promise<ExpertRanking> {
+    const normalizedRanking = {
+      ...ranking,
+      instagramHandle: ranking.instagramHandle.replace('@', '').toLowerCase()
+    };
+    const result = await db.insert(expertRankings).values(normalizedRanking).returning();
+    return result[0];
+  }
+
+  async deleteExpertRanking(id: string): Promise<void> {
+    await db.delete(expertRankings).where(eq(expertRankings.id, id));
   }
 }
 
