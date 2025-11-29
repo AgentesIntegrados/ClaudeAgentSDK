@@ -6,6 +6,7 @@ import { z } from "zod";
 import { processAgentMessage, type ChatMessage } from "./claude";
 import { broadcastLog } from "./logger";
 import { cache } from "./cache";
+import { mcpManager } from "./mcp-manager";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -463,7 +464,7 @@ export async function registerRoutes(
     }
   });
 
-  // MCP Server - Test Connection (placeholder for future implementation)
+  // MCP Server - Test Connection using real MCP SDK
   app.post("/api/mcp-servers/:id/test", async (req, res) => {
     try {
       const server = await storage.getMcpServer(req.params.id);
@@ -471,24 +472,56 @@ export async function registerRoutes(
         return res.status(404).json({ error: "MCP server not found" });
       }
       
-      // TODO: Implement actual MCP connection test
-      // For now, just simulate a test
-      broadcastLog("MCP", `Testando conexão com ${server.name}...`);
+      broadcastLog("MCP", `Conectando a ${server.name}...`);
       
-      // Update status based on test result
-      await storage.updateMcpServer(req.params.id, {
-        status: "connected",
-        lastConnected: new Date(),
-        lastError: null
-      });
+      const result = await mcpManager.refreshServerConnection(req.params.id);
       
-      res.json({ 
-        success: true, 
-        message: `Conexão com ${server.name} testada com sucesso`,
-        server: await storage.getMcpServer(req.params.id)
-      });
+      if (result.success) {
+        broadcastLog("MCP", `Conectado a ${server.name}! Descobertas ${result.tools?.length || 0} ferramentas.`);
+        res.json({ 
+          success: true, 
+          message: `Conexão com ${server.name} estabelecida com sucesso`,
+          tools: result.tools,
+          server: await storage.getMcpServer(req.params.id)
+        });
+      } else {
+        broadcastLog("MCP", `Erro ao conectar a ${server.name}: ${result.error}`);
+        res.status(400).json({ 
+          success: false, 
+          error: result.error,
+          server: await storage.getMcpServer(req.params.id)
+        });
+      }
     } catch (error: any) {
+      broadcastLog("MCP", `Erro fatal: ${error.message}`);
       res.status(500).json({ error: error.message || "Failed to test MCP server connection" });
+    }
+  });
+  
+  // MCP - Get all discovered tools from connected servers
+  app.get("/api/mcp-tools", async (req, res) => {
+    try {
+      const tools = mcpManager.getAllTools();
+      res.json(tools);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get MCP tools" });
+    }
+  });
+  
+  // MCP - Call a tool on a connected server
+  app.post("/api/mcp-servers/:serverId/tools/:toolName", async (req, res) => {
+    try {
+      const { serverId, toolName } = req.params;
+      const args = req.body || {};
+      
+      if (!mcpManager.isConnected(serverId)) {
+        return res.status(400).json({ error: "Server is not connected" });
+      }
+      
+      const result = await mcpManager.callTool(serverId, toolName, args);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to call MCP tool" });
     }
   });
 
