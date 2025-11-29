@@ -16,7 +16,7 @@ import {
   expertRankings
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -144,8 +144,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getExpertRankingByHandle(handle: string): Promise<ExpertRanking | undefined> {
-    const normalizedHandle = handle.replace('@', '').toLowerCase();
-    const result = await db.select().from(expertRankings).where(eq(expertRankings.instagramHandle, normalizedHandle)).limit(1);
+    const normalizedHandle = handle.replace('@', '').trim().toLowerCase();
+    // Usa LOWER e REPLACE para busca case-insensitive que também ignora '@'
+    const result = await db.select().from(expertRankings)
+      .where(sql`LOWER(REPLACE(${expertRankings.instagramHandle}, '@', '')) = ${normalizedHandle}`)
+      .limit(1);
     return result[0];
   }
 
