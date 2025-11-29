@@ -146,6 +146,20 @@ const analyzeExpertFit = tool(
         autoridade: ["Cofundador e CEO @doc4u.mentoria", "Especialista em vendas para médicos", "Mentor de profissionais de saúde"],
         estruturaVendas: ["Mentoria estruturada", "Página de vendas", "Funil de captação"],
         score: 88
+      },
+      "drfredericomaia": {
+        nome: "Dr. Frederico Maia",
+        nicho: "Endocrinologia e Mentoria para Médicos",
+        publicoAlvo: "Médicos",
+        seguidores: 38800,
+        infoprodutos: [
+          { nome: "Mentoria Médica", tipo: "Mentoria para médicos", ticketMedio: "R$ 3.500" },
+          { nome: "Programa de Desenvolvimento Médico", tipo: "Curso estruturado", ticketMedio: "R$ 2.500" }
+        ],
+        comunidade: { nome: "Comunidade Médicos de Elite", membros: 600 },
+        autoridade: ["Endocrinologista", "Mentor de médicos", "Palestrante em congressos médicos"],
+        estruturaVendas: ["Mentoria estruturada", "Página de vendas", "Funil de nutrição"],
+        score: 88
       }
     };
 
@@ -342,6 +356,15 @@ const getExpertContact = tool(
         tempo_resposta: "2-4 dias úteis",
         melhor_abordagem: "Email ou DM mencionando nicho médico e modelo de negócios",
         gatilhos: ["Soluções para médicos", "Vendas high ticket para saúde", "Parcerias com foco em profissionais de saúde"]
+      },
+      "drfredericomaia": {
+        nome: "Dr. Frederico Maia",
+        email_comercial: "contato@drfredericomaia.com.br",
+        assessoria: null,
+        whatsapp_comercial: "(11) 9xxxx-xxxx",
+        tempo_resposta: "3-5 dias úteis",
+        melhor_abordagem: "Email ou DM mencionando endocrinologia e desenvolvimento médico",
+        gatilhos: ["Mentoria para médicos", "Desenvolvimento profissional médico", "Parcerias com foco em endocrinologia"]
       }
     };
 
