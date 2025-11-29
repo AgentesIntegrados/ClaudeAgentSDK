@@ -3,79 +3,149 @@ import { z } from 'zod';
 
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
-const analyzeCompanyFit = tool(
-  'analyze_company_fit',
-  'Analyzes a company\'s public data to check if it fits the ICP (Ideal Customer Profile). Returns qualification score and reasons based on company size, industry, technology stack, and funding stage.',
+const analyzeInfluencerFit = tool(
+  'analyze_influencer_fit',
+  'Analisa o perfil de um influenciador para verificar se ele se encaixa no ICP (Perfil de Cliente Ideal). Avalia: número de seguidores (mín 10k), taxa de engajamento, se vende infoprodutos, nicho de atuação. Retorna score de qualificação e motivos.',
   {
-    company_domain: z.string().describe("The website domain of the company (e.g., 'example.com')"),
-    criteria: z.array(z.string()).optional().describe("List of qualification criteria to check (e.g., ['B2B', 'Series B+', 'US-based'])")
+    instagram_handle: z.string().describe("O @ do Instagram do influenciador (ex: '@fulano' ou 'fulano')"),
+    criteria: z.array(z.string()).optional().describe("Critérios adicionais de qualificação (ex: ['nicho fitness', 'engajamento alto', 'vende curso'])")
   },
   async (args) => {
     const timestamp = new Date().toISOString();
-    const domain = args.company_domain || "unknown.com";
-    const criteria = args.criteria || ["B2B SaaS", "Tech Stack Moderno", "Equipe de Engenharia"];
+    const handle = (args.instagram_handle || "unknown").replace('@', '');
+    const criteria = args.criteria || ["Vende infoprodutos", "Engajamento > 3%", "Seguidores > 10k"];
     
-    const companyData: Record<string, { industry: string; size: string; techStack: string[]; funding: string; score: number }> = {
-      "replit.com": {
-        industry: "Developer Tools / IDE",
-        size: "100-500 funcionários",
-        techStack: ["Python", "Node.js", "Go", "TypeScript"],
-        funding: "Series B - $97.4M",
+    const influencerData: Record<string, { 
+      nome: string;
+      nicho: string; 
+      seguidores: number; 
+      engajamento: number; 
+      infoprodutos: string[];
+      plataformas: string[];
+      score: number 
+    }> = {
+      "nfranca": {
+        nome: "Nathalia França",
+        nicho: "Finanças Pessoais",
+        seguidores: 2500000,
+        engajamento: 4.2,
+        infoprodutos: ["Curso Liberdade Financeira", "Mentoria VIP", "Ebook Investimentos"],
+        plataformas: ["Instagram", "YouTube", "Hotmart"],
+        score: 95
+      },
+      "virginiaramos": {
+        nome: "Virginia Fonseca",
+        nicho: "Lifestyle / Maternidade",
+        seguidores: 48000000,
+        engajamento: 3.8,
+        infoprodutos: ["Marca própria WePink"],
+        plataformas: ["Instagram", "YouTube", "TikTok"],
+        score: 72
+      },
+      "pfranca": {
+        nome: "Pablo Marçal",
+        nicho: "Empreendedorismo / Mindset",
+        seguidores: 12000000,
+        engajamento: 5.1,
+        infoprodutos: ["Método IP", "Mentorias em grupo", "Curso de Oratória", "Imersão presencial"],
+        plataformas: ["Instagram", "YouTube", "Kiwify"],
+        score: 98
+      },
+      "thalissonsoares": {
+        nome: "Thalisson Soares",
+        nicho: "Marketing Digital",
+        seguidores: 850000,
+        engajamento: 4.5,
+        infoprodutos: ["Curso Tráfego Pago", "Mentoria Marketing"],
+        plataformas: ["Instagram", "Hotmart"],
         score: 92
       },
-      "stripe.com": {
-        industry: "Fintech / Payments",
-        size: "5000+ funcionários",
-        techStack: ["Ruby", "Python", "Go", "Scala"],
-        funding: "Series I - $600M+",
+      "belabelinha": {
+        nome: "Bela Gil",
+        nicho: "Alimentação Saudável",
+        seguidores: 3200000,
+        engajamento: 3.2,
+        infoprodutos: ["Curso de Culinária Natural", "Ebooks de Receitas"],
+        plataformas: ["Instagram", "YouTube"],
         score: 88
       },
-      "vercel.com": {
-        industry: "Developer Tools / Cloud",
-        size: "200-500 funcionários",
-        techStack: ["TypeScript", "Node.js", "Go", "Rust"],
-        funding: "Series D - $150M",
-        score: 95
+      "caborato": {
+        nome: "Caio Carneiro",
+        nicho: "Vendas / Empreendedorismo",
+        seguidores: 1800000,
+        engajamento: 4.0,
+        infoprodutos: ["Livro Seja Foda", "Palestras", "Mentorias"],
+        plataformas: ["Instagram", "YouTube"],
+        score: 90
       }
     };
 
-    const company = companyData[domain] || {
-      industry: "Tecnologia",
-      size: "50-200 funcionários",
-      techStack: ["Python", "JavaScript"],
-      funding: "Seed/Series A",
-      score: Math.floor(Math.random() * 20) + 70
+    const influencer = influencerData[handle.toLowerCase()] || {
+      nome: handle,
+      nicho: "Não identificado",
+      seguidores: Math.floor(Math.random() * 50000) + 5000,
+      engajamento: Math.random() * 3 + 1,
+      infoprodutos: [],
+      plataformas: ["Instagram"],
+      score: Math.floor(Math.random() * 30) + 40
     };
+
+    const formatFollowers = (n: number) => {
+      if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+      if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
+      return n.toString();
+    };
+
+    const qualificationReasons: string[] = [];
+    const riskFactors: string[] = [];
+
+    if (influencer.seguidores >= 10000) {
+      qualificationReasons.push(`Base de seguidores sólida: ${formatFollowers(influencer.seguidores)}`);
+    } else {
+      riskFactors.push(`Seguidores abaixo do mínimo (10k): apenas ${formatFollowers(influencer.seguidores)}`);
+    }
+
+    if (influencer.engajamento >= 3) {
+      qualificationReasons.push(`Excelente taxa de engajamento: ${influencer.engajamento.toFixed(1)}%`);
+    } else if (influencer.engajamento >= 2) {
+      qualificationReasons.push(`Taxa de engajamento razoável: ${influencer.engajamento.toFixed(1)}%`);
+    } else {
+      riskFactors.push(`Engajamento baixo: ${influencer.engajamento.toFixed(1)}%`);
+    }
+
+    if (influencer.infoprodutos.length > 0) {
+      qualificationReasons.push(`Já vende infoprodutos: ${influencer.infoprodutos.join(", ")}`);
+    } else {
+      riskFactors.push("Não possui infoprodutos identificados");
+    }
+
+    qualificationReasons.push(`Nicho: ${influencer.nicho}`);
+    qualificationReasons.push(`Presente em: ${influencer.plataformas.join(", ")}`);
 
     const result = {
       _metadata: {
         source: "simulated",
-        note: "Dados de demonstração. Em produção, conectar a APIs como Clearbit, LinkedIn Sales Navigator, ou CRM."
+        note: "Dados de demonstração. Em produção, conectar a APIs como Social Blade, HypeAuditor, ou Instagram Graph API."
       },
       timestamp,
-      company_domain: domain,
+      instagram_handle: `@${handle}`,
       analysis: {
-        score: company.score,
-        qualified: company.score >= 75,
-        industry: company.industry,
-        company_size: company.size,
-        tech_stack: company.techStack,
-        funding_stage: company.funding,
+        score: influencer.score,
+        qualified: influencer.score >= 75,
+        nome: influencer.nome,
+        nicho: influencer.nicho,
+        seguidores: influencer.seguidores,
+        seguidores_formatado: formatFollowers(influencer.seguidores),
+        engajamento: `${influencer.engajamento.toFixed(1)}%`,
+        infoprodutos: influencer.infoprodutos,
+        plataformas: influencer.plataformas,
         criteria_checked: criteria
       },
-      match_reasons: [
-        `Indústria compatível: ${company.industry}`,
-        `Stack tecnológico: ${company.techStack.join(", ")}`,
-        `Estágio de funding: ${company.funding}`,
-        company.score >= 85 ? "Alta probabilidade de conversão" : "Potencial moderado de conversão"
-      ],
-      risk_factors: company.score < 85 ? [
-        "Pode requerer ciclo de vendas mais longo",
-        "Verificar orçamento disponível"
-      ] : [],
-      recommendation: company.score >= 75 
-        ? "QUALIFICADO - Prosseguir com outreach" 
-        : "NÃO QUALIFICADO - Arquivar para nurturing"
+      match_reasons: qualificationReasons,
+      risk_factors: riskFactors,
+      recommendation: influencer.score >= 75 
+        ? "QUALIFICADO - Prosseguir com abordagem" 
+        : "NÃO QUALIFICADO - Não atende critérios mínimos"
     };
 
     return {
@@ -84,61 +154,131 @@ const analyzeCompanyFit = tool(
   }
 );
 
-const getDecisionMaker = tool(
-  'get_decision_maker',
-  'Finds the likely decision maker for a specific role at a company. Returns name, title, and contact information patterns.',
+const getInfluencerContact = tool(
+  'get_influencer_contact',
+  'Busca informações de contato de um influenciador para abordagem comercial. Retorna email comercial, assessoria, e sugestões de abordagem personalizada.',
   {
-    company_domain: z.string().describe("The website domain of the company"),
-    role: z.string().describe("The role to search for (e.g., 'VP of Engineering', 'CTO', 'Head of Product')")
+    instagram_handle: z.string().describe("O @ do Instagram do influenciador"),
+    approach_type: z.enum(["parceria", "afiliado", "licenciamento", "collab"]).optional().describe("Tipo de abordagem pretendida")
   },
   async (args) => {
     const timestamp = new Date().toISOString();
-    const domain = args.company_domain || "unknown.com";
-    const role = args.role || "Engineering Lead";
+    const handle = (args.instagram_handle || "unknown").replace('@', '');
+    const approachType = args.approach_type || "parceria";
     
-    const decisionMakers: Record<string, Record<string, { name: string; title: string; linkedin: string }>> = {
-      "replit.com": {
-        "CTO": { name: "Amjad Masad", title: "CEO & Co-founder", linkedin: "linkedin.com/in/amjadmasad" },
-        "VP of Engineering": { name: "Faris Masad", title: "Co-founder", linkedin: "linkedin.com/in/masadfaris" },
-        "Head of Product": { name: "Product Lead", title: "Head of Product", linkedin: "linkedin.com/company/replit" }
+    const contactData: Record<string, { 
+      nome: string;
+      email_comercial: string; 
+      assessoria: string | null;
+      whatsapp_comercial: string | null;
+      tempo_resposta: string;
+      melhor_abordagem: string;
+    }> = {
+      "nfranca": {
+        nome: "Nathalia França",
+        email_comercial: "comercial@nathaliafranca.com.br",
+        assessoria: "Agência XYZ",
+        whatsapp_comercial: null,
+        tempo_resposta: "3-5 dias úteis",
+        melhor_abordagem: "Email com proposta detalhada e números"
       },
-      "stripe.com": {
-        "CTO": { name: "David Singleton", title: "CTO", linkedin: "linkedin.com/in/dps" },
-        "VP of Engineering": { name: "Engineering VP", title: "VP of Engineering", linkedin: "linkedin.com/company/stripe" }
+      "virginiaramos": {
+        nome: "Virginia Fonseca",
+        email_comercial: "parcerias@wepink.com.br",
+        assessoria: "WePink Assessoria",
+        whatsapp_comercial: null,
+        tempo_resposta: "7-14 dias úteis",
+        melhor_abordagem: "Via assessoria apenas"
       },
-      "vercel.com": {
-        "CTO": { name: "Guillermo Rauch", title: "CEO & Founder", linkedin: "linkedin.com/in/rauchg" },
-        "VP of Engineering": { name: "Engineering Lead", title: "VP of Engineering", linkedin: "linkedin.com/company/vercel" }
+      "pfranca": {
+        nome: "Pablo Marçal",
+        email_comercial: "negocios@pfranca.com.br",
+        assessoria: "Equipe Marçal",
+        whatsapp_comercial: null,
+        tempo_resposta: "5-7 dias úteis",
+        melhor_abordagem: "Email objetivo com proposta de valor clara"
+      },
+      "thalissonsoares": {
+        nome: "Thalisson Soares",
+        email_comercial: "contato@thalissonsoares.com",
+        assessoria: null,
+        whatsapp_comercial: "(11) 9xxxx-xxxx",
+        tempo_resposta: "1-3 dias úteis",
+        melhor_abordagem: "DM ou WhatsApp comercial"
+      },
+      "belabelinha": {
+        nome: "Bela Gil",
+        email_comercial: "comercial@belagil.com.br",
+        assessoria: "Assessoria pessoal",
+        whatsapp_comercial: null,
+        tempo_resposta: "5-7 dias úteis",
+        melhor_abordagem: "Email com alinhamento de valores"
+      },
+      "caborato": {
+        nome: "Caio Carneiro",
+        email_comercial: "parcerias@caiocarneiro.com.br",
+        assessoria: "Seja Foda Assessoria",
+        whatsapp_comercial: null,
+        tempo_resposta: "3-5 dias úteis",
+        melhor_abordagem: "Email com case de sucesso similar"
       }
     };
 
-    const companyContacts = decisionMakers[domain] || {};
-    const contact = companyContacts[role] || {
-      name: `${role} Contact`,
-      title: role,
-      linkedin: `linkedin.com/company/${domain.split('.')[0]}`
+    const contact = contactData[handle.toLowerCase()] || {
+      nome: handle,
+      email_comercial: `contato@${handle.toLowerCase()}.com.br`,
+      assessoria: null,
+      whatsapp_comercial: null,
+      tempo_resposta: "Variável",
+      melhor_abordagem: "DM no Instagram ou email"
+    };
+
+    const approachSuggestions: Record<string, string[]> = {
+      parceria: [
+        "Apresente o valor que você trará para a audiência dele",
+        "Mostre cases de parcerias anteriores bem-sucedidas",
+        "Seja específico sobre entregas e contrapartidas",
+        "Mencione o alinhamento com o nicho dele"
+      ],
+      afiliado: [
+        "Destaque as comissões e modelo de pagamento",
+        "Apresente materiais de divulgação prontos",
+        "Mostre conversão média de outros afiliados",
+        "Ofereça período de teste do produto"
+      ],
+      licenciamento: [
+        "Apresente proposta de royalties clara",
+        "Mostre potencial de escala do produto",
+        "Detalhe suporte e produção que você oferece",
+        "Inclua projeção de faturamento"
+      ],
+      collab: [
+        "Proponha conteúdo que beneficie ambas as audiências",
+        "Seja flexível sobre formatos (lives, reels, stories)",
+        "Sugira datas e cronograma realista",
+        "Mostre como as audiências se complementam"
+      ]
     };
 
     const result = {
       _metadata: {
         source: "simulated",
-        note: "Dados de demonstração. Em produção, conectar a APIs como LinkedIn Sales Navigator, Apollo.io, ou ZoomInfo."
+        note: "Dados de demonstração. Em produção, conectar a APIs de prospecção e bases de contatos verificados."
       },
       timestamp,
-      company_domain: domain,
-      role_searched: role,
-      decision_maker: {
-        name: contact.name,
-        title: contact.title,
-        linkedin_url: contact.linkedin,
-        email_pattern: `nome.sobrenome@${domain}`,
-        confidence: companyContacts[role] ? "Alta" : "Média"
+      instagram_handle: `@${handle}`,
+      approach_type: approachType,
+      contact_info: {
+        nome: contact.nome,
+        email_comercial: contact.email_comercial,
+        assessoria: contact.assessoria,
+        whatsapp_comercial: contact.whatsapp_comercial,
+        tempo_resposta: contact.tempo_resposta,
+        melhor_canal: contact.melhor_abordagem,
+        confidence: contactData[handle.toLowerCase()] ? "Alta" : "Média"
       },
-      outreach_suggestions: [
-        "Mencionar stack tecnológico em comum",
-        "Referenciar case studies do setor",
-        "Propor demo técnica de 15 minutos"
-      ]
+      outreach_suggestions: approachSuggestions[approachType] || approachSuggestions.parceria,
+      template_abordagem: `Olá ${contact.nome}! Acompanho seu trabalho no Instagram e admiro como você [mencione algo específico]. Gostaria de propor uma ${approachType} que pode ser muito interessante para sua audiência. Posso enviar mais detalhes?`
     };
 
     return {
@@ -150,7 +290,7 @@ const getDecisionMaker = tool(
 const sdrMcpServer = createSdkMcpServer({
   name: 'sdr',
   version: '1.0.0',
-  tools: [analyzeCompanyFit, getDecisionMaker]
+  tools: [analyzeInfluencerFit, getInfluencerContact]
 });
 
 export interface ChatMessage {
@@ -233,15 +373,15 @@ export interface SubAgentDefinition {
 
 const defaultSubAgents: Record<string, SubAgentDefinition> = {
   researcher: {
-    description: 'Pesquisa informações detalhadas sobre empresas e mercados',
-    prompt: 'Você é um pesquisador especializado em análise de empresas B2B. Utilize as ferramentas disponíveis para coletar dados sobre empresas alvo, identificar padrões de mercado e fornecer insights acionáveis para a equipe de vendas.',
-    tools: ['mcp__sdr__analyze_company_fit'],
+    description: 'Pesquisa e analisa perfis de influenciadores',
+    prompt: 'Você é um pesquisador especializado em análise de influenciadores digitais brasileiros que vendem infoprodutos. Utilize as ferramentas disponíveis para avaliar o perfil, engajamento, nicho e potencial de cada influenciador.',
+    tools: ['mcp__sdr__analyze_influencer_fit'],
     model: 'sonnet'
   },
   outreach_specialist: {
-    description: 'Especialista em estratégias de outreach e contato com decisores',
-    prompt: 'Você é um especialista em outreach B2B. Seu objetivo é identificar os tomadores de decisão corretos nas empresas qualificadas e sugerir abordagens personalizadas baseadas no contexto da empresa e do contato.',
-    tools: ['mcp__sdr__get_decision_maker'],
+    description: 'Especialista em abordagem e contato com influenciadores',
+    prompt: 'Você é um especialista em outreach para influenciadores. Seu objetivo é identificar os melhores canais de contato e sugerir abordagens personalizadas baseadas no perfil e nicho do influenciador.',
+    tools: ['mcp__sdr__get_influencer_contact'],
     model: 'sonnet'
   }
 };
