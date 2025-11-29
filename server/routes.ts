@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
-import { insertAgentConfigSchema, insertConversationSchema, insertMessageSchema } from "@shared/schema";
+import { insertAgentConfigSchema, insertConversationSchema, insertMessageSchema, insertExpertRankingSchema } from "@shared/schema";
 import { z } from "zod";
 import { processAgentMessage, type ChatMessage } from "./claude";
 import { broadcastLog } from "./logger";
@@ -243,6 +243,42 @@ export async function registerRoutes(
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: error.message || "Failed to process chat" });
+    }
+  });
+
+  // Expert Rankings
+  app.get("/api/rankings", async (req, res) => {
+    try {
+      const rankings = await storage.getAllExpertRankings();
+      res.json(rankings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rankings" });
+    }
+  });
+
+  app.post("/api/rankings", async (req, res) => {
+    try {
+      const validated = insertExpertRankingSchema.parse(req.body);
+      const existing = await storage.getExpertRankingByHandle(validated.instagramHandle);
+      if (existing) {
+        return res.status(409).json({ error: "Expert já existe no ranking", existing });
+      }
+      const ranking = await storage.createExpertRanking(validated);
+      res.status(201).json(ranking);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create ranking" });
+    }
+  });
+
+  app.delete("/api/rankings/:id", async (req, res) => {
+    try {
+      await storage.deleteExpertRanking(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete ranking" });
     }
   });
 
