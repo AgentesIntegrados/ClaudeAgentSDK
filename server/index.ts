@@ -4,6 +4,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import { addLogClient, removeLogClient, broadcastLog } from "./logger";
+import { seedMcpServers, initializeMcpConnections } from "./seed-mcp";
 
 const app = express();
 const httpServer = createServer(app);
@@ -111,8 +112,16 @@ app.use((req, res, next) => {
       host: "0.0.0.0",
       reusePort: true,
     },
-    () => {
+    async () => {
       log(`serving on port ${port}`);
+      
+      // Initialize MCP servers after startup
+      try {
+        await seedMcpServers();
+        await initializeMcpConnections();
+      } catch (error) {
+        console.error("[MCP] Error during initialization:", error);
+      }
     },
   );
 })();

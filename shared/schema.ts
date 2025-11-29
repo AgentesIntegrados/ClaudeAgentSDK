@@ -108,10 +108,13 @@ export const mcpServers = pgTable("mcp_servers", {
   name: text("name").notNull(),
   description: text("description"),
   transportType: text("transport_type").notNull(), // 'stdio' | 'http' | 'websocket'
-  endpoint: text("endpoint"), // URL for http/websocket
+  endpoint: text("endpoint"), // URL for http/websocket (without auth params)
   command: text("command"), // Command for stdio (e.g., "npx", "node")
   args: text("args").array(), // Arguments for stdio command
   env: jsonb("env"), // Environment variables for stdio
+  authMode: text("auth_mode").notNull().default("none"), // 'none' | 'bearer' | 'header' | 'query'
+  secretRef: text("secret_ref"), // Reference to env var name (e.g., "SMITHERY_API_KEY")
+  authConfig: jsonb("auth_config"), // Additional auth config (header name, query param name, etc.)
   enabled: boolean("enabled").notNull().default(true),
   status: text("status").notNull().default("disconnected"), // 'connected' | 'disconnected' | 'error'
   lastError: text("last_error"),
