@@ -9,11 +9,14 @@ import {
   type InsertMessage,
   type ExpertRanking,
   type InsertExpertRanking,
+  type McpServer,
+  type InsertMcpServer,
   users,
   agentConfigs,
   conversations,
   messages,
-  expertRankings
+  expertRankings,
+  mcpServers
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -47,6 +50,14 @@ export interface IStorage {
   getExpertRankingByHandle(handle: string): Promise<ExpertRanking | undefined>;
   createExpertRanking(ranking: InsertExpertRanking): Promise<ExpertRanking>;
   deleteExpertRanking(id: string): Promise<void>;
+  
+  // MCP Servers
+  getAllMcpServers(): Promise<McpServer[]>;
+  getMcpServer(id: string): Promise<McpServer | undefined>;
+  getEnabledMcpServers(): Promise<McpServer[]>;
+  createMcpServer(server: InsertMcpServer): Promise<McpServer>;
+  updateMcpServer(id: string, updates: Partial<McpServer>): Promise<McpServer | undefined>;
+  deleteMcpServer(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -167,6 +178,38 @@ export class DatabaseStorage implements IStorage {
 
   async deleteExpertRanking(id: string): Promise<void> {
     await db.delete(expertRankings).where(eq(expertRankings.id, id));
+  }
+
+  // MCP Servers
+  async getAllMcpServers(): Promise<McpServer[]> {
+    return db.select().from(mcpServers).orderBy(desc(mcpServers.createdAt));
+  }
+
+  async getMcpServer(id: string): Promise<McpServer | undefined> {
+    const result = await db.select().from(mcpServers).where(eq(mcpServers.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getEnabledMcpServers(): Promise<McpServer[]> {
+    return db.select().from(mcpServers).where(eq(mcpServers.enabled, true)).orderBy(mcpServers.name);
+  }
+
+  async createMcpServer(server: InsertMcpServer): Promise<McpServer> {
+    const result = await db.insert(mcpServers).values(server).returning();
+    return result[0];
+  }
+
+  async updateMcpServer(id: string, updates: Partial<McpServer>): Promise<McpServer | undefined> {
+    const result = await db
+      .update(mcpServers)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(mcpServers.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteMcpServer(id: string): Promise<void> {
+    await db.delete(mcpServers).where(eq(mcpServers.id, id));
   }
 }
 

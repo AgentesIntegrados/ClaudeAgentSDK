@@ -13,6 +13,7 @@ const Settings = lazy(() => import("@/pages/settings"));
 const Roadmap = lazy(() => import("@/pages/roadmap"));
 const Analytics = lazy(() => import("@/pages/analytics"));
 const Validation = lazy(() => import("@/pages/validation"));
+const McpServers = lazy(() => import("@/pages/mcp-servers"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 // Componente de loading
@@ -32,6 +33,7 @@ function Router() {
         <Route path="/roadmap" component={Roadmap} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/validation" component={Validation} />
+        <Route path="/mcp-servers" component={McpServers} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>

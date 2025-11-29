@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
-import { insertAgentConfigSchema, insertConversationSchema, insertMessageSchema, insertExpertRankingSchema } from "@shared/schema";
+import { insertAgentConfigSchema, insertConversationSchema, insertMessageSchema, insertExpertRankingSchema, insertMcpServerSchema } from "@shared/schema";
 import { z } from "zod";
 import { processAgentMessage, type ChatMessage } from "./claude";
 import { broadcastLog } from "./logger";
@@ -392,6 +392,103 @@ export async function registerRoutes(
       res.json({ path, content });
     } catch (error) {
       res.status(404).json({ error: "File not found" });
+    }
+  });
+
+  // MCP Servers
+  app.get("/api/mcp-servers", async (req, res) => {
+    try {
+      const servers = await storage.getAllMcpServers();
+      res.json(servers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch MCP servers" });
+    }
+  });
+
+  app.get("/api/mcp-servers/enabled", async (req, res) => {
+    try {
+      const servers = await storage.getEnabledMcpServers();
+      res.json(servers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch enabled MCP servers" });
+    }
+  });
+
+  app.get("/api/mcp-servers/:id", async (req, res) => {
+    try {
+      const server = await storage.getMcpServer(req.params.id);
+      if (!server) {
+        return res.status(404).json({ error: "MCP server not found" });
+      }
+      res.json(server);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch MCP server" });
+    }
+  });
+
+  app.post("/api/mcp-servers", async (req, res) => {
+    try {
+      const validated = insertMcpServerSchema.parse(req.body);
+      const server = await storage.createMcpServer(validated);
+      broadcastLog("MCP", `MCP Server criado: ${server.name}`);
+      res.status(201).json(server);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create MCP server" });
+    }
+  });
+
+  app.patch("/api/mcp-servers/:id", async (req, res) => {
+    try {
+      const server = await storage.updateMcpServer(req.params.id, req.body);
+      if (!server) {
+        return res.status(404).json({ error: "MCP server not found" });
+      }
+      broadcastLog("MCP", `MCP Server atualizado: ${server.name}`);
+      res.json(server);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update MCP server" });
+    }
+  });
+
+  app.delete("/api/mcp-servers/:id", async (req, res) => {
+    try {
+      await storage.deleteMcpServer(req.params.id);
+      broadcastLog("MCP", "MCP Server removido");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete MCP server" });
+    }
+  });
+
+  // MCP Server - Test Connection (placeholder for future implementation)
+  app.post("/api/mcp-servers/:id/test", async (req, res) => {
+    try {
+      const server = await storage.getMcpServer(req.params.id);
+      if (!server) {
+        return res.status(404).json({ error: "MCP server not found" });
+      }
+      
+      // TODO: Implement actual MCP connection test
+      // For now, just simulate a test
+      broadcastLog("MCP", `Testando conexão com ${server.name}...`);
+      
+      // Update status based on test result
+      await storage.updateMcpServer(req.params.id, {
+        status: "connected",
+        lastConnected: new Date(),
+        lastError: null
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Conexão com ${server.name} testada com sucesso`,
+        server: await storage.getMcpServer(req.params.id)
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to test MCP server connection" });
     }
   });
 

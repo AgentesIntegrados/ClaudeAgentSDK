@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -101,3 +101,35 @@ export const insertExpertRankingSchema = createInsertSchema(expertRankings).omit
 
 export type InsertExpertRanking = z.infer<typeof insertExpertRankingSchema>;
 export type ExpertRanking = typeof expertRankings.$inferSelect;
+
+// MCP Servers - External MCP server connections
+export const mcpServers = pgTable("mcp_servers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  transportType: text("transport_type").notNull(), // 'stdio' | 'http' | 'websocket'
+  endpoint: text("endpoint"), // URL for http/websocket
+  command: text("command"), // Command for stdio (e.g., "npx", "node")
+  args: text("args").array(), // Arguments for stdio command
+  env: jsonb("env"), // Environment variables for stdio
+  enabled: boolean("enabled").notNull().default(true),
+  status: text("status").notNull().default("disconnected"), // 'connected' | 'disconnected' | 'error'
+  lastError: text("last_error"),
+  discoveredTools: jsonb("discovered_tools"), // Array of tool definitions from server
+  lastConnected: timestamp("last_connected"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertMcpServerSchema = createInsertSchema(mcpServers).omit({
+  id: true,
+  status: true,
+  lastError: true,
+  discoveredTools: true,
+  lastConnected: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMcpServer = z.infer<typeof insertMcpServerSchema>;
+export type McpServer = typeof mcpServers.$inferSelect;

@@ -8,7 +8,8 @@ import {
   Menu,
   X,
   BarChart3,
-  Beaker
+  Beaker,
+  Server
 } from "lucide-react";
 import { useState, memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/settings", icon: Settings, label: "Configurações" },
     { href: "/analytics", icon: BarChart3, label: "Analytics" },
     { href: "/validation", icon: Beaker, label: "Validação do Agente" },
+    { href: "/mcp-servers", icon: Server, label: "MCP Servers" },
   ], []);
 
   return (
