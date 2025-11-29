@@ -38,7 +38,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = useMemo(() => [
-    { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/", icon: LayoutDashboard, label: "Chat Principal" },
     { href: "/architecture", icon: FileCode, label: "Especificação de Arquitetura" },
     { href: "/terminal", icon: Terminal, label: "Logs em Tempo Real" },
     { href: "/roadmap", icon: Bot, label: "Roadmap" },
