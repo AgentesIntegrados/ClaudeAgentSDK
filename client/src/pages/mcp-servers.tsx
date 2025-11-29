@@ -42,6 +42,7 @@ import {
 import type { McpServer } from "@shared/schema";
 
 type TransportType = "stdio" | "http" | "websocket";
+type AuthMode = "none" | "bearer" | "header" | "query";
 
 interface McpServerFormData {
   name: string;
@@ -50,6 +51,8 @@ interface McpServerFormData {
   endpoint: string;
   command: string;
   args: string;
+  authMode: AuthMode;
+  secretRef: string;
   enabled: boolean;
 }
 
@@ -60,6 +63,8 @@ const defaultFormData: McpServerFormData = {
   endpoint: "",
   command: "",
   args: "",
+  authMode: "none",
+  secretRef: "",
   enabled: true
 };
 
@@ -79,6 +84,8 @@ export default function McpServers() {
         name: data.name,
         description: data.description || null,
         transportType: data.transportType,
+        authMode: data.authMode,
+        secretRef: data.secretRef || null,
         enabled: data.enabled
       };
 
@@ -296,16 +303,52 @@ export default function McpServers() {
                     </div>
                   </>
                 ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="endpoint">URL do Endpoint</Label>
-                    <Input
-                      id="endpoint"
-                      placeholder={formData.transportType === "websocket" ? "wss://..." : "https://..."}
-                      value={formData.endpoint}
-                      onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
-                      data-testid="input-mcp-endpoint"
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="endpoint">URL do Endpoint</Label>
+                      <Input
+                        id="endpoint"
+                        placeholder={formData.transportType === "websocket" ? "wss://..." : "https://..."}
+                        value={formData.endpoint}
+                        onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
+                        data-testid="input-mcp-endpoint"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="authMode">Autenticação</Label>
+                      <Select
+                        value={formData.authMode}
+                        onValueChange={(value: AuthMode) => setFormData({ ...formData, authMode: value })}
+                      >
+                        <SelectTrigger data-testid="select-auth-mode">
+                          <SelectValue placeholder="Selecione o tipo de autenticação" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhuma</SelectItem>
+                          <SelectItem value="bearer">Bearer Token</SelectItem>
+                          <SelectItem value="header">Header personalizado</SelectItem>
+                          <SelectItem value="query">Query parameter (API Key)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.authMode !== "none" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="secretRef">Nome da variável de ambiente</Label>
+                        <Input
+                          id="secretRef"
+                          placeholder="Ex: SMITHERY_API_KEY"
+                          value={formData.secretRef}
+                          onChange={(e) => setFormData({ ...formData, secretRef: e.target.value })}
+                          data-testid="input-secret-ref"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          O valor será lido da variável de ambiente configurada nos Secrets
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="flex items-center justify-between">

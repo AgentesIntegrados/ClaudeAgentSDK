@@ -18,13 +18,85 @@ interface ConnectedServer {
   serverName: string;
 }
 
+interface AuthConfig {
+  apiKeyParam?: string;
+  profileParam?: string;
+  profile?: string;
+  headerName?: string;
+  prefix?: string;
+}
+
 class McpConnectionManager {
   private connections: Map<string, ConnectedServer> = new Map();
+
+  private resolveSecret(secretRef: string | null): string | null {
+    if (!secretRef) return null;
+    const value = process.env[secretRef];
+    if (!value) {
+      console.warn(`[MCP] Secret ${secretRef} not found in environment`);
+    }
+    return value || null;
+  }
+
+  private buildAuthenticatedUrl(endpoint: string, server: McpServer): URL {
+    const url = new URL(endpoint);
+    const authConfig = server.authConfig as AuthConfig | null;
+    
+    if (server.authMode === "query" && server.secretRef) {
+      const secret = this.resolveSecret(server.secretRef);
+      if (secret && authConfig?.apiKeyParam) {
+        url.searchParams.set(authConfig.apiKeyParam, secret);
+      }
+      if (authConfig?.profileParam && authConfig?.profile) {
+        url.searchParams.set(authConfig.profileParam, authConfig.profile);
+      }
+    }
+    
+    return url;
+  }
+
+  private buildRequestInit(server: McpServer): RequestInit | undefined {
+    const authConfig = server.authConfig as AuthConfig | null;
+    
+    if (server.authMode === "bearer" && server.secretRef) {
+      const secret = this.resolveSecret(server.secretRef);
+      if (secret) {
+        return {
+          headers: {
+            "Authorization": `Bearer ${secret}`
+          }
+        };
+      }
+    }
+    
+    if (server.authMode === "header" && server.secretRef) {
+      const secret = this.resolveSecret(server.secretRef);
+      const headerName = authConfig?.headerName || "X-API-Key";
+      const prefix = authConfig?.prefix || "";
+      if (secret) {
+        return {
+          headers: {
+            [headerName]: `${prefix}${secret}`
+          }
+        };
+      }
+    }
+    
+    return undefined;
+  }
 
   async connectToServer(server: McpServer): Promise<{ success: boolean; tools?: McpTool[]; error?: string }> {
     try {
       if (this.connections.has(server.id)) {
         await this.disconnectServer(server.id);
+      }
+
+      // Check if secret is required but missing
+      if (server.authMode !== "none" && server.secretRef) {
+        const secret = this.resolveSecret(server.secretRef);
+        if (!secret) {
+          throw new Error(`Missing required secret: ${server.secretRef}. Please configure this in your environment.`);
+        }
       }
 
       let transport: StreamableHTTPClientTransport | StdioClientTransport;
@@ -33,7 +105,11 @@ class McpConnectionManager {
         if (!server.endpoint) {
           throw new Error("Endpoint is required for HTTP/WebSocket transport");
         }
-        transport = new StreamableHTTPClientTransport(new URL(server.endpoint));
+        
+        const authenticatedUrl = this.buildAuthenticatedUrl(server.endpoint, server);
+        const requestInit = this.buildRequestInit(server);
+        
+        transport = new StreamableHTTPClientTransport(authenticatedUrl, requestInit ? { requestInit } : undefined);
       } else if (server.transportType === "stdio") {
         if (!server.command) {
           throw new Error("Command is required for stdio transport");
@@ -78,19 +154,22 @@ class McpConnectionManager {
         lastConnected: new Date()
       });
 
+      // Log without exposing secrets
       console.log(`[MCP] Connected to ${server.name}, discovered ${tools.length} tools:`, tools.map(t => t.name));
 
       return { success: true, tools };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`[MCP] Failed to connect to ${server.name}:`, errorMessage);
+      // Sanitize error message to not expose secrets
+      const sanitizedError = errorMessage.replace(/api_key=[^&\s]+/gi, "api_key=***");
+      console.error(`[MCP] Failed to connect to ${server.name}:`, sanitizedError);
 
       await storage.updateMcpServer(server.id, {
         status: "error",
-        lastError: errorMessage
+        lastError: sanitizedError
       });
 
-      return { success: false, error: errorMessage };
+      return { success: false, error: sanitizedError };
     }
   }
 

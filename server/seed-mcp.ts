@@ -7,7 +7,14 @@ const DEFAULT_MCP_SERVERS = [
     name: "Sequential Thinking",
     description: "Smithery AI Sequential Thinking - Dynamic and reflective problem-solving through structured reasoning",
     transportType: "http" as const,
-    endpoint: "https://server.smithery.ai/@smithery-ai/server-sequential-thinking/mcp?api_key=a2e9f1a1-c4d0-4c00-b3e4-f3e9e2040201&profile=nau1111l",
+    endpoint: "https://server.smithery.ai/@smithery-ai/server-sequential-thinking/mcp",
+    authMode: "query" as const,
+    secretRef: "SMITHERY_API_KEY",
+    authConfig: { 
+      apiKeyParam: "api_key",
+      profileParam: "profile",
+      profile: "nau1111l"
+    },
     enabled: true
   }
 ];
