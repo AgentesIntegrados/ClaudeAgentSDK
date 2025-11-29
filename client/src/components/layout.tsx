@@ -6,7 +6,8 @@ import {
   Settings, 
   Bot, 
   Menu,
-  X
+  X,
+  BarChart3
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/terminal", icon: Terminal, label: "Logs em Tempo Real" },
     { href: "/roadmap", icon: Bot, label: "Roadmap" },
     { href: "/settings", icon: Settings, label: "Configurações" },
+    { href: "/analytics", icon: BarChart3, label: "Analytics" },
   ];
 
   return (

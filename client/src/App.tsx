@@ -9,6 +9,7 @@ import Architecture from "@/pages/architecture";
 import LiveLogs from "@/pages/terminal";
 import Settings from "@/pages/settings";
 import Roadmap from "@/pages/roadmap";
+import Analytics from "@/pages/analytics";
 
 function Router() {
   return (
@@ -17,7 +18,7 @@ function Router() {
       <Route path="/architecture" component={Architecture} />
       <Route path="/terminal" component={LiveLogs} />
       <Route path="/roadmap" component={Roadmap} />
-      <Route path="/settings" component={Settings} />
+      <Route path="/analytics" component={Analytics} />
       <Route component={NotFound} />
     </Switch>
   );
