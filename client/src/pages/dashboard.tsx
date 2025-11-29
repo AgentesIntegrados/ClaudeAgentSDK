@@ -1,6 +1,6 @@
 import Layout from "@/components/layout";
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, Activity, ShieldCheck, Code2, Terminal, Check } from "lucide-react";
+import { Send, Bot, User, Sparkles, Terminal, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -127,93 +127,9 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-8rem)]">
-        
-        {/* Left Column: Session Info */}
-        <div className="space-y-6 lg:col-span-1">
-          {/* Session Card */}
-          <div className="bg-card border border-border rounded-xl p-6 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Bot className="w-24 h-24" />
-            </div>
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <Activity className="w-5 h-5 mr-2 text-primary" />
-              Sessão Atual
-            </h2>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Estado</span>
-                <span className="flex items-center text-green-400 bg-green-400/10 px-2 py-1 rounded text-xs font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 mr-2 animate-pulse" />
-                  Conectado
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Mensagens</span>
-                <span className="font-mono text-sm">{messages.length}</span>
-              </div>
-              <div className="w-full bg-secondary h-1.5 rounded-full mt-2">
-                <div 
-                  className="bg-primary h-1.5 rounded-full transition-all" 
-                  style={{ width: `${Math.min((messages.length / (agentConfig?.maxTurns || 10)) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground text-right pt-1">
-                {messages.length}/{agentConfig?.maxTurns || 10} turnos usados
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Actions Card */}
-          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <Sparkles className="w-5 h-5 mr-2 text-primary" />
-              Ações Rápidas
-            </h2>
-            <div className="space-y-2">
-              <button 
-                onClick={() => setInput("Analise a empresa replit.com")}
-                className="w-full text-left text-sm p-3 bg-background/50 hover:bg-background rounded border border-border/50 transition-colors"
-                data-testid="quick-action-replit"
-              >
-                Analisar replit.com
-              </button>
-              <button 
-                onClick={() => setInput("Encontre o CTO da stripe.com")}
-                className="w-full text-left text-sm p-3 bg-background/50 hover:bg-background rounded border border-border/50 transition-colors"
-                data-testid="quick-action-stripe"
-              >
-                Buscar decisor em stripe.com
-              </button>
-              <button 
-                onClick={() => setInput("Qualifique vercel.com para nosso SDK")}
-                className="w-full text-left text-sm p-3 bg-background/50 hover:bg-background rounded border border-border/50 transition-colors"
-                data-testid="quick-action-vercel"
-              >
-                Qualificar vercel.com
-              </button>
-            </div>
-          </div>
-
-          {/* Info Card */}
-          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <ShieldCheck className="w-5 h-5 mr-2 text-primary" />
-              Sobre o Agente
-            </h2>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>
-                <strong className="text-foreground">{agentConfig?.name || "QualifyBot"}</strong> é um agente SDR que qualifica leads usando ferramentas MCP.
-              </p>
-              <p className="text-xs">
-                Configurações detalhadas disponíveis na página de <a href="/settings" className="text-primary hover:underline">Configurações</a>.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Chat Interface */}
-        <div className="lg:col-span-2 flex flex-col bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="h-[calc(100vh-8rem)]">
+        {/* Chat Interface */}
+        <div className="h-full flex flex-col bg-card border border-border rounded-xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-border flex justify-between items-center bg-card/50 backdrop-blur">
             <div className="flex items-center">
               <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center mr-3">
