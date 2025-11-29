@@ -66,10 +66,17 @@ The database schema supports four main entities:
 ## External Dependencies
 
 **AI/ML Services:**
-- **Anthropic Claude API** - Core AI agent functionality via `@anthropic-ai/sdk`
-  - Supports custom API keys per agent configuration
+- **Claude Agent SDK** - Core AI agent functionality via `@anthropic-ai/claude-agent-sdk`
+  - Uses `query()` function for streaming agent interactions
+  - Uses `tool()` function with Zod schemas for type-safe tool definitions
+  - Uses `createSdkMcpServer()` for in-process MCP server creation
   - Default model: `claude-sonnet-4-20250514`
-  - Implements specialized SDR (Sales Development Representative) tools for company analysis
+  - Supports hooks: PreToolUse, PostToolUse, SessionStart
+  - Supports session management: resume, forkSession
+  - Supports programmatic subagents: researcher, outreach_specialist
+  - Implements specialized SDR (Sales Development Representative) tools:
+    - `analyze_company_fit` - Analyzes company ICP fit with scoring
+    - `get_decision_maker` - Finds decision makers by role
 
 **Database Services:**
 - **Neon Database** - Serverless PostgreSQL with WebSocket support

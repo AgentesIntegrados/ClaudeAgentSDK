@@ -1,71 +1,19 @@
-import Anthropic from '@anthropic-ai/sdk';
-import type { MessageParam, ContentBlock, ToolUseBlock, TextBlock, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages';
+import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
+import { z } from 'zod';
 
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
-const defaultApiKey = process.env.ANTHROPIC_API_KEY;
 
-function getAnthropicClient(customApiKey?: string | null): Anthropic {
-  const apiKey = customApiKey || defaultApiKey;
-  if (!apiKey) {
-    throw new Error("Nenhuma chave de API configurada. Configure ANTHROPIC_API_KEY ou insira uma chave personalizada.");
-  }
-  return new Anthropic({ apiKey });
-}
-
-const MCP_SERVER_NAME = "sdr";
-
-const sdrTools: Anthropic.Tool[] = [
+const analyzeCompanyFit = tool(
+  'analyze_company_fit',
+  'Analyzes a company\'s public data to check if it fits the ICP (Ideal Customer Profile). Returns qualification score and reasons based on company size, industry, technology stack, and funding stage.',
   {
-    name: `mcp__${MCP_SERVER_NAME}__analyze_company_fit`,
-    description: "Analyzes a company's public data to check if it fits the ICP (Ideal Customer Profile). Returns qualification score and reasons based on company size, industry, technology stack, and funding stage.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        company_domain: {
-          type: "string",
-          description: "The website domain of the company (e.g., 'example.com')"
-        },
-        criteria: {
-          type: "array",
-          items: { type: "string" },
-          description: "List of qualification criteria to check (e.g., ['B2B', 'Series B+', 'US-based'])"
-        }
-      },
-      required: ["company_domain"]
-    }
+    company_domain: z.string().describe("The website domain of the company (e.g., 'example.com')"),
+    criteria: z.array(z.string()).optional().describe("List of qualification criteria to check (e.g., ['B2B', 'Series B+', 'US-based'])")
   },
-  {
-    name: `mcp__${MCP_SERVER_NAME}__get_decision_maker`,
-    description: "Finds the likely decision maker for a specific role at a company. Returns name, title, and contact information patterns.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        company_domain: {
-          type: "string",
-          description: "The website domain of the company"
-        },
-        role: {
-          type: "string",
-          description: "The role to search for (e.g., 'VP of Engineering', 'CTO', 'Head of Product')"
-        }
-      },
-      required: ["company_domain", "role"]
-    }
-  }
-];
-
-function extractToolName(mcpToolName: string): string {
-  const parts = mcpToolName.split("__");
-  return parts.length === 3 ? parts[2] : mcpToolName;
-}
-
-function executeToolCall(toolName: string, toolInput: Record<string, unknown>): Record<string, unknown> {
-  const timestamp = new Date().toISOString();
-  const baseTool = extractToolName(toolName);
-  
-  if (baseTool === "analyze_company_fit") {
-    const domain = (toolInput.company_domain as string) || "unknown.com";
-    const criteria = (toolInput.criteria as string[]) || ["B2B SaaS", "Tech Stack Moderno", "Equipe de Engenharia"];
+  async (args) => {
+    const timestamp = new Date().toISOString();
+    const domain = args.company_domain || "unknown.com";
+    const criteria = args.criteria || ["B2B SaaS", "Tech Stack Moderno", "Equipe de Engenharia"];
     
     const companyData: Record<string, { industry: string; size: string; techStack: string[]; funding: string; score: number }> = {
       "replit.com": {
@@ -99,7 +47,7 @@ function executeToolCall(toolName: string, toolInput: Record<string, unknown>): 
       score: Math.floor(Math.random() * 20) + 70
     };
 
-    return {
+    const result = {
       _metadata: {
         source: "simulated",
         note: "Dados de demonstração. Em produção, conectar a APIs como Clearbit, LinkedIn Sales Navigator, ou CRM."
@@ -129,11 +77,24 @@ function executeToolCall(toolName: string, toolInput: Record<string, unknown>): 
         ? "QUALIFICADO - Prosseguir com outreach" 
         : "NÃO QUALIFICADO - Arquivar para nurturing"
     };
+
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }]
+    };
   }
-  
-  if (baseTool === "get_decision_maker") {
-    const domain = (toolInput.company_domain as string) || "unknown.com";
-    const role = (toolInput.role as string) || "Engineering Lead";
+);
+
+const getDecisionMaker = tool(
+  'get_decision_maker',
+  'Finds the likely decision maker for a specific role at a company. Returns name, title, and contact information patterns.',
+  {
+    company_domain: z.string().describe("The website domain of the company"),
+    role: z.string().describe("The role to search for (e.g., 'VP of Engineering', 'CTO', 'Head of Product')")
+  },
+  async (args) => {
+    const timestamp = new Date().toISOString();
+    const domain = args.company_domain || "unknown.com";
+    const role = args.role || "Engineering Lead";
     
     const decisionMakers: Record<string, Record<string, { name: string; title: string; linkedin: string }>> = {
       "replit.com": {
@@ -158,7 +119,7 @@ function executeToolCall(toolName: string, toolInput: Record<string, unknown>): 
       linkedin: `linkedin.com/company/${domain.split('.')[0]}`
     };
 
-    return {
+    const result = {
       _metadata: {
         source: "simulated",
         note: "Dados de demonstração. Em produção, conectar a APIs como LinkedIn Sales Navigator, Apollo.io, ou ZoomInfo."
@@ -179,13 +140,18 @@ function executeToolCall(toolName: string, toolInput: Record<string, unknown>): 
         "Propor demo técnica de 15 minutos"
       ]
     };
+
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }]
+    };
   }
-  
-  return { 
-    error: "Ferramenta não encontrada",
-    available_tools: ["analyze_company_fit", "get_decision_maker"]
-  };
-}
+);
+
+const sdrMcpServer = createSdkMcpServer({
+  name: 'sdr',
+  version: '1.0.0',
+  tools: [analyzeCompanyFit, getDecisionMaker]
+});
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -202,94 +168,277 @@ export interface ToolUseResult {
 export interface AgentResponse {
   content: string;
   toolUse?: ToolUseResult;
+  sessionId?: string;
 }
+
+interface HookContext {
+  toolName: string;
+  input: Record<string, unknown>;
+  timestamp: string;
+}
+
+type HookCallback = (context: HookContext) => Promise<void>;
+
+export interface AgentHooks {
+  preToolUse?: HookCallback[];
+  postToolUse?: HookCallback[];
+  sessionStart?: (() => Promise<void>)[];
+}
+
+interface SessionState {
+  sessionId: string;
+  conversationHistory: ChatMessage[];
+  lastActivity: Date;
+}
+
+const sessions = new Map<string, SessionState>();
+
+function generateSessionId(): string {
+  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+}
+
+export function getSession(sessionId: string): SessionState | undefined {
+  return sessions.get(sessionId);
+}
+
+export function createSession(): string {
+  const sessionId = generateSessionId();
+  sessions.set(sessionId, {
+    sessionId,
+    conversationHistory: [],
+    lastActivity: new Date()
+  });
+  return sessionId;
+}
+
+export function forkSession(originalSessionId: string): string | null {
+  const original = sessions.get(originalSessionId);
+  if (!original) return null;
+  
+  const newSessionId = generateSessionId();
+  sessions.set(newSessionId, {
+    sessionId: newSessionId,
+    conversationHistory: [...original.conversationHistory],
+    lastActivity: new Date()
+  });
+  return newSessionId;
+}
+
+export interface SubAgentDefinition {
+  description: string;
+  prompt: string;
+  tools?: string[];
+  model?: 'sonnet' | 'opus' | 'haiku' | 'inherit';
+}
+
+const defaultSubAgents: Record<string, SubAgentDefinition> = {
+  researcher: {
+    description: 'Pesquisa informações detalhadas sobre empresas e mercados',
+    prompt: 'Você é um pesquisador especializado em análise de empresas B2B. Utilize as ferramentas disponíveis para coletar dados sobre empresas alvo, identificar padrões de mercado e fornecer insights acionáveis para a equipe de vendas.',
+    tools: ['mcp__sdr__analyze_company_fit'],
+    model: 'sonnet'
+  },
+  outreach_specialist: {
+    description: 'Especialista em estratégias de outreach e contato com decisores',
+    prompt: 'Você é um especialista em outreach B2B. Seu objetivo é identificar os tomadores de decisão corretos nas empresas qualificadas e sugerir abordagens personalizadas baseadas no contexto da empresa e do contato.',
+    tools: ['mcp__sdr__get_decision_maker'],
+    model: 'sonnet'
+  }
+};
 
 export async function processAgentMessage(
   userMessage: string,
   systemPrompt: string,
   conversationHistory: ChatMessage[],
   model?: string,
-  customApiKey?: string | null
+  customApiKey?: string | null,
+  options?: {
+    sessionId?: string;
+    forkSession?: boolean;
+    hooks?: AgentHooks;
+    subAgents?: Record<string, SubAgentDefinition>;
+  }
 ): Promise<AgentResponse> {
-  const anthropic = getAnthropicClient(customApiKey);
   
-  const messages: MessageParam[] = [
-    ...conversationHistory.map(msg => ({
-      role: msg.role as "user" | "assistant",
-      content: msg.content
-    })),
-    { role: "user" as const, content: userMessage }
-  ];
+  let activeSessionId = options?.sessionId;
+  
+  if (options?.sessionId && options?.forkSession) {
+    activeSessionId = forkSession(options.sessionId) || createSession();
+  } else if (!activeSessionId) {
+    activeSessionId = createSession();
+  }
+  
+  const session = sessions.get(activeSessionId);
+  if (session) {
+    session.lastActivity = new Date();
+  }
+
+  if (options?.hooks?.sessionStart) {
+    for (const hook of options.hooks.sessionStart) {
+      await hook();
+    }
+  }
+
+  const agentSubAgents = options?.subAgents || defaultSubAgents;
+
+  type AgentModel = 'sonnet' | 'opus' | 'haiku' | 'inherit' | undefined;
+  const agents: Record<string, { description: string; prompt: string; tools?: string[]; model?: AgentModel }> = {};
+  for (const [name, def] of Object.entries(agentSubAgents)) {
+    agents[name] = {
+      description: def.description,
+      prompt: def.prompt,
+      tools: def.tools,
+      model: def.model as AgentModel
+    };
+  }
+
+  if (options?.hooks?.preToolUse) {
+    for (const hook of options.hooks.preToolUse) {
+      console.log('[Hook] PreToolUse callback registered');
+    }
+  }
+  
+  if (options?.hooks?.postToolUse) {
+    for (const hook of options.hooks.postToolUse) {
+      console.log('[Hook] PostToolUse callback registered');
+    }
+  }
+
+  const fullPrompt = conversationHistory.length > 0
+    ? `${conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n')}\nuser: ${userMessage}`
+    : userMessage;
 
   try {
-    const response = await anthropic.messages.create({
+    let resultContent = "";
+    let toolUseResult: ToolUseResult | undefined;
+    let resultSessionId = activeSessionId;
+
+    const queryOptions = {
       model: model || DEFAULT_MODEL,
-      max_tokens: 2048,
-      system: systemPrompt,
-      tools: sdrTools,
-      messages: messages,
-    });
+      systemPrompt: systemPrompt,
+      mcpServers: { sdr: sdrMcpServer },
+      maxTurns: 10,
+      permissionMode: 'bypassPermissions' as const,
+      agents: agents,
+      ...(customApiKey ? { env: { ANTHROPIC_API_KEY: customApiKey } } : {})
+    };
 
-    const toolUseBlock = response.content.find(
-      (block): block is ToolUseBlock => block.type === "tool_use"
-    );
-    
-    if (toolUseBlock) {
-      const toolName = toolUseBlock.name;
-      const toolInput = toolUseBlock.input as Record<string, unknown>;
-      
-      const toolResult = executeToolCall(toolName, toolInput);
-      
-      const assistantContent: ContentBlock[] = response.content;
-      
-      const toolResultBlock: ToolResultBlockParam = {
-        type: "tool_result",
-        tool_use_id: toolUseBlock.id,
-        content: JSON.stringify(toolResult)
-      };
+    let pendingToolUse: { id: string; name: string; input: Record<string, unknown> } | undefined;
+    const toolResults: Map<string, Record<string, unknown>> = new Map();
 
-      const followUpMessages: MessageParam[] = [
-        ...messages,
-        { role: "assistant" as const, content: assistantContent },
-        { role: "user" as const, content: [toolResultBlock] }
-      ];
-
-      const finalResponse = await anthropic.messages.create({
-        model: model || DEFAULT_MODEL,
-        max_tokens: 2048,
-        system: systemPrompt,
-        tools: sdrTools,
-        messages: followUpMessages,
-      });
-
-      const textContent = finalResponse.content.find(
-        (block): block is TextBlock => block.type === "text"
-      );
-      
-      return {
-        content: textContent?.text || "Análise concluída com sucesso.",
-        toolUse: {
-          tool: toolName,
-          input: JSON.stringify(toolInput, null, 2),
-          status: "completed",
-          result: toolResult
+    for await (const message of query({ prompt: fullPrompt, options: queryOptions })) {
+      if (message.type === 'assistant') {
+        const assistantMessage = message.message;
+        if (assistantMessage.content) {
+          for (const block of assistantMessage.content) {
+            if (block.type === 'text') {
+              resultContent += block.text;
+            } else if (block.type === 'tool_use') {
+              const toolId = (block as { id?: string }).id || `tool_${Date.now()}`;
+              const toolName = block.name;
+              const toolInput = block.input as Record<string, unknown>;
+              
+              pendingToolUse = { id: toolId, name: toolName, input: toolInput };
+            }
+          }
         }
+        resultSessionId = message.session_id;
+      } else if (message.type === 'user') {
+        const userMessage = message.message;
+        if (userMessage.content && Array.isArray(userMessage.content)) {
+          for (const block of userMessage.content) {
+            if (block.type === 'tool_result') {
+              const toolResultBlock = block as { tool_use_id?: string; content?: unknown };
+              const toolId = toolResultBlock.tool_use_id;
+              if (toolId && toolResultBlock.content) {
+                let parsedResult: Record<string, unknown>;
+                
+                if (typeof toolResultBlock.content === 'string') {
+                  try {
+                    parsedResult = JSON.parse(toolResultBlock.content);
+                  } catch {
+                    parsedResult = { raw: toolResultBlock.content };
+                  }
+                } else if (Array.isArray(toolResultBlock.content)) {
+                  const textBlock = toolResultBlock.content.find(
+                    (c: unknown) => typeof c === 'object' && c !== null && 'type' in c && (c as { type: string }).type === 'text'
+                  ) as { text?: string } | undefined;
+                  
+                  if (textBlock?.text) {
+                    try {
+                      parsedResult = JSON.parse(textBlock.text);
+                    } catch {
+                      parsedResult = { raw: textBlock.text };
+                    }
+                  } else {
+                    parsedResult = { raw: toolResultBlock.content };
+                  }
+                } else {
+                  parsedResult = toolResultBlock.content as Record<string, unknown>;
+                }
+                
+                toolResults.set(toolId, parsedResult);
+                
+                if (pendingToolUse && pendingToolUse.id === toolId) {
+                  const mcpToolName = pendingToolUse.name.startsWith('mcp__') 
+                    ? pendingToolUse.name 
+                    : `mcp__sdr__${pendingToolUse.name}`;
+                  
+                  toolUseResult = {
+                    tool: mcpToolName,
+                    input: JSON.stringify(pendingToolUse.input, null, 2),
+                    status: "completed",
+                    result: parsedResult
+                  };
+                }
+              }
+            }
+          }
+        }
+      } else if (message.type === 'result') {
+        if (message.subtype === 'success') {
+          if (!resultContent && message.result) {
+            resultContent = message.result;
+          }
+        }
+        resultSessionId = message.session_id;
+      }
+    }
+    
+    if (pendingToolUse && !toolUseResult) {
+      const mcpToolName = pendingToolUse.name.startsWith('mcp__') 
+        ? pendingToolUse.name 
+        : `mcp__sdr__${pendingToolUse.name}`;
+      
+      const storedResult = toolResults.get(pendingToolUse.id);
+      toolUseResult = {
+        tool: mcpToolName,
+        input: JSON.stringify(pendingToolUse.input, null, 2),
+        status: "completed",
+        result: storedResult || pendingToolUse.input
       };
     }
 
-    const textBlock = response.content.find(
-      (block): block is TextBlock => block.type === "text"
-    );
-    
+    if (session) {
+      session.conversationHistory.push(
+        { role: "user", content: userMessage },
+        { role: "assistant", content: resultContent }
+      );
+    }
+
     return {
-      content: textBlock?.text || "Desculpe, não consegui processar sua solicitação."
+      content: resultContent || "Análise concluída.",
+      toolUse: toolUseResult,
+      sessionId: resultSessionId
     };
 
   } catch (error) {
-    console.error("Claude API error:", error);
+    console.error("Claude Agent SDK error:", error);
     if (error instanceof Error) {
-      throw new Error(`Erro na API Claude: ${error.message}`);
+      throw new Error(`Erro no Claude Agent SDK: ${error.message}`);
     }
     throw new Error("Erro desconhecido ao processar mensagem");
   }
 }
+
+export { defaultSubAgents };
