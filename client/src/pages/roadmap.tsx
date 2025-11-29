@@ -115,6 +115,118 @@ const roadmapItems: RoadmapItem[] = [
       "Email via SendGrid/Resend",
       "Push notifications via OneSignal"
     ]
+  },
+  {
+    id: "9",
+    title: "Sequência de Follow-up Automático",
+    description: "Emails automáticos personalizados baseados no score e nicho do expert",
+    status: "planned",
+    category: "feature",
+    technical_details: [
+      "3 templates de email por faixa de score (70-80, 80-90, 90+)",
+      "Personalização com dados do expert (nicho, infoprodutos, autoridade)",
+      "Agendamento inteligente: Dia 1, Dia 3, Dia 7, Dia 14",
+      "Tracking de abertura e cliques (via Resend/SendGrid)",
+      "Stop automático se houver resposta"
+    ]
+  },
+  {
+    id: "10",
+    title: "Pipeline de Qualificação (BANT)",
+    description: "Sistema de scoring baseado em Budget, Authority, Need, Timing",
+    status: "planned",
+    category: "feature",
+    technical_details: [
+      "Budget: Ticket médio dos infoprodutos (R$ 2k+, R$ 5k+, R$ 10k+)",
+      "Authority: Seguidores, engajamento, menções em mídia",
+      "Need: Nicho alinhado (médicos), gaps identificados",
+      "Timing: Lançamentos recentes, crescimento de seguidores",
+      "Score final: 0-100 com recomendação de abordagem"
+    ]
+  },
+  {
+    id: "11",
+    title: "CRM Integrado com Histórico de Interações",
+    description: "Registro completo de conversas, emails enviados e status de negociação",
+    status: "planned",
+    category: "feature",
+    technical_details: [
+      "Status: Novo Lead → Qualificado → Em Negociação → Ganho/Perdido",
+      "Timeline de interações: emails, DMs, ligações, reuniões",
+      "Notas do SDR sobre cada contato",
+      "Tags personalizadas (Ex: 'Aguardando proposta', 'Interesse alto')",
+      "Exportação para Pipedrive/HubSpot/Salesforce"
+    ]
+  },
+  {
+    id: "12",
+    title: "Templates de Proposta Comercial",
+    description: "Geração automática de propostas personalizadas com IA",
+    status: "planned",
+    category: "feature",
+    technical_details: [
+      "Claude gera proposta baseada nos dados do expert",
+      "3 modelos: Parceria, Afiliação, White Label",
+      "Cálculo automático de ROI e projeção de faturamento",
+      "Exportação em PDF com design profissional",
+      "Assinatura eletrônica via DocuSign/ClickSign"
+    ]
+  },
+  {
+    id: "13",
+    title: "Dashboard de Conversão e Métricas",
+    description: "Análise de funil comercial com KPIs de SDR em tempo real",
+    status: "planned",
+    category: "improvement",
+    technical_details: [
+      "Taxa de conversão por etapa do funil",
+      "Tempo médio de fechamento",
+      "Ticket médio por parceria fechada",
+      "ROI de cada campanha de outreach",
+      "Gráficos de tendência e comparativo mensal"
+    ]
+  },
+  {
+    id: "14",
+    title: "Automação de Agendamento de Reuniões",
+    description: "Integração com Calendly/Google Calendar para agendar calls",
+    status: "planned",
+    category: "feature",
+    technical_details: [
+      "Link de agendamento único por lead",
+      "Sincronização automática com Google Calendar",
+      "Lembrete automático 24h e 1h antes da reunião",
+      "Preparação de briefing da call com dados do expert",
+      "Registro automático da reunião no CRM"
+    ]
+  },
+  {
+    id: "15",
+    title: "Sistema de Pontos de Gatilho (Triggers)",
+    description: "Alertas quando expert realiza ação que indica momento de compra",
+    status: "planned",
+    category: "feature",
+    technical_details: [
+      "Gatilho 1: Expert lançou novo produto (momento quente)",
+      "Gatilho 2: Crescimento anormal de seguidores (>20%/mês)",
+      "Gatilho 3: Menção em mídia ou prêmio recebido",
+      "Gatilho 4: Expert abriu vaga na equipe (expansão)",
+      "Notificação instantânea ao SDR com sugestão de abordagem"
+    ]
+  },
+  {
+    id: "16",
+    title: "Script de Cold Call com IA",
+    description: "Claude gera roteiro personalizado de ligação baseado no perfil do expert",
+    status: "planned",
+    category: "feature",
+    technical_details: [
+      "Análise prévia do tom de voz do expert (bio, posts)",
+      "Objeções previstas e respostas personalizadas",
+      "Gatilhos emocionais específicos do nicho",
+      "Perguntas de descoberta (Discovery Questions)",
+      "Script adaptável em tempo real durante a call"
+    ]
   }
 ];
 
@@ -244,14 +356,54 @@ export default function Roadmap() {
         <div className="mt-8 bg-primary/10 border border-primary/30 rounded-lg p-6">
           <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
-            Próximos Passos
+            Roadmap de Evolução
           </h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>✅ <strong>Fase 1 (Atual):</strong> Sistema funcional com base hardcoded</li>
-            <li>🔄 <strong>Fase 2 (Q2 2025):</strong> Integração Instagram Graph API (oficial)</li>
-            <li>⏳ <strong>Fase 3 (Q3 2025):</strong> Análise avançada com Social Blade/HypeAuditor</li>
-            <li>🚀 <strong>Fase 4 (Q4 2025):</strong> IA para análise de sentimento e automações</li>
+            <li>✅ <strong>Fase 1 (Atual - Q1 2025):</strong> Sistema funcional com base hardcoded + Cache inteligente</li>
+            <li>🔄 <strong>Fase 2 (Q2 2025):</strong> Integração Instagram Graph API + Analytics avançado</li>
+            <li>⏳ <strong>Fase 3 (Q3 2025):</strong> Fluxo comercial completo (CRM, Follow-up, Propostas)</li>
+            <li>🚀 <strong>Fase 4 (Q4 2025):</strong> Automação SDR full stack (Gatilhos, Cold Call IA, Agendamento)</li>
+            <li>🎯 <strong>Fase 5 (2026):</strong> Integração Social Blade/HypeAuditor + Análise preditiva com ML</li>
           </ul>
+        </div>
+
+        {/* Commercial Flow Summary */}
+        <div className="mt-6 bg-green-500/10 border border-green-500/30 rounded-lg p-6">
+          <h3 className="font-bold text-lg mb-3 text-green-400">🎯 Funcionalidades de Fluxo Comercial</h3>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+            <div>
+              <h4 className="font-semibold text-foreground mb-2">Automação de Outreach</h4>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>Sequências de email personalizadas</li>
+                <li>Follow-up automático inteligente</li>
+                <li>Templates de proposta com IA</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground mb-2">Gestão de Pipeline</h4>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>CRM integrado com histórico</li>
+                <li>Qualificação BANT automatizada</li>
+                <li>Dashboard de conversão em tempo real</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground mb-2">Gatilhos de Vendas</h4>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>Alertas de momento de compra</li>
+                <li>Monitoramento de lançamentos</li>
+                <li>Crescimento anormal de seguidores</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground mb-2">Ferramentas de Conversão</h4>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>Agendamento automático de calls</li>
+                <li>Scripts de cold call com IA</li>
+                <li>Assinatura eletrônica de contratos</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </Layout>
