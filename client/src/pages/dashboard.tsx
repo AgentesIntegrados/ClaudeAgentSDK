@@ -55,7 +55,7 @@ export default function Dashboard() {
     {
       id: "greeting",
       role: "agent",
-      content: "Olá! Sou o InfluencerBot, especialista em qualificar influenciadores para parcerias. Posso analisar seguidores, engajamento e infoprodutos. Qual influenciador devo analisar?",
+      content: "Olá! Sou o ExpertBot, especialista em qualificar experts e mentores high ticket. Analiso infoprodutos, comunidade, ticket médio e autoridade. Qual expert devo analisar?",
       timestamp: new Date()
     }
   ] : messages;
@@ -136,7 +136,7 @@ export default function Dashboard() {
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold">{agentConfig?.name || "InfluencerBot"}</h3>
+                <h3 className="font-semibold">{agentConfig?.name || "ExpertBot"}</h3>
                 <p className="text-xs text-muted-foreground">Powered by Claude Agent SDK</p>
               </div>
             </div>
@@ -232,7 +232,7 @@ export default function Dashboard() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                placeholder="Digite o @ de um influenciador para analisar..."
+                placeholder="Digite o @ de um expert/mentor para analisar..."
                 className="w-full bg-secondary/50 border border-input hover:border-primary/50 focus:border-primary rounded-lg py-3 pl-4 pr-12 outline-none transition-colors"
                 disabled={isTyping}
                 data-testid="input-message"

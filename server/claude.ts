@@ -3,91 +3,148 @@ import { z } from 'zod';
 
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
-const analyzeInfluencerFit = tool(
-  'analyze_influencer_fit',
-  'Analisa o perfil de um influenciador para verificar se ele se encaixa no ICP (Perfil de Cliente Ideal). Avalia: número de seguidores (mín 10k), taxa de engajamento, se vende infoprodutos, nicho de atuação. Retorna score de qualificação e motivos.',
+const analyzeExpertFit = tool(
+  'analyze_expert_fit',
+  'Analisa o perfil de um expert/mentor que vende cursos high ticket para verificar se ele se encaixa no ICP. Avalia: infoproduto estruturado, nicho definido (foco em profissionais como médicos, advogados), comunidade paga (mín 500 membros), ticket médio (acima de R$1.000), autoridade no nicho, estrutura de vendas.',
   {
-    instagram_handle: z.string().describe("O @ do Instagram do influenciador (ex: '@fulano' ou 'fulano')"),
-    criteria: z.array(z.string()).optional().describe("Critérios adicionais de qualificação (ex: ['nicho fitness', 'engajamento alto', 'vende curso'])")
+    instagram_handle: z.string().describe("O @ do Instagram do expert/mentor (ex: '@nandamac' ou 'nandamac')"),
+    criteria: z.array(z.string()).optional().describe("Critérios adicionais de qualificação")
   },
   async (args) => {
     const timestamp = new Date().toISOString();
     const handle = (args.instagram_handle || "unknown").replace('@', '');
-    const criteria = args.criteria || ["Vende infoprodutos", "Engajamento > 3%", "Seguidores > 10k"];
+    const criteria = args.criteria || [
+      "Infoproduto estruturado",
+      "Nicho definido",
+      "Comunidade paga 500+",
+      "Ticket > R$1.000",
+      "Autoridade no nicho",
+      "Estrutura de vendas"
+    ];
     
-    const influencerData: Record<string, { 
+    const expertData: Record<string, { 
       nome: string;
-      nicho: string; 
-      seguidores: number; 
-      engajamento: number; 
-      infoprodutos: string[];
-      plataformas: string[];
-      score: number 
+      nicho: string;
+      publicoAlvo: string;
+      seguidores: number;
+      infoprodutos: { nome: string; tipo: string; ticketMedio: string }[];
+      comunidade: { nome: string; membros: number } | null;
+      autoridade: string[];
+      estruturaVendas: string[];
+      score: number;
     }> = {
-      "nfranca": {
-        nome: "Nathalia França",
-        nicho: "Finanças Pessoais",
-        seguidores: 2500000,
-        engajamento: 4.2,
-        infoprodutos: ["Curso Liberdade Financeira", "Mentoria VIP", "Ebook Investimentos"],
-        plataformas: ["Instagram", "YouTube", "Hotmart"],
-        score: 95
-      },
-      "virginiaramos": {
-        nome: "Virginia Fonseca",
-        nicho: "Lifestyle / Maternidade",
-        seguidores: 48000000,
-        engajamento: 3.8,
-        infoprodutos: ["Marca própria WePink"],
-        plataformas: ["Instagram", "YouTube", "TikTok"],
-        score: 72
-      },
-      "pfranca": {
-        nome: "Pablo Marçal",
-        nicho: "Empreendedorismo / Mindset",
-        seguidores: 12000000,
-        engajamento: 5.1,
-        infoprodutos: ["Método IP", "Mentorias em grupo", "Curso de Oratória", "Imersão presencial"],
-        plataformas: ["Instagram", "YouTube", "Kiwify"],
+      "nandamac": {
+        nome: "Nanda Mac Dowell",
+        nicho: "Vendas High Ticket para Profissionais de Saúde",
+        publicoAlvo: "Médicos, dentistas, psicólogos, nutricionistas, fisioterapeutas",
+        seguidores: 180000,
+        infoprodutos: [
+          { nome: "Consultório High Ticket", tipo: "Curso com 7 módulos", ticketMedio: "R$ 2.997" },
+          { nome: "Imersão 10K", tipo: "Evento presencial", ticketMedio: "R$ 4.500" },
+          { nome: "Mentoria VIP", tipo: "Acompanhamento individual", ticketMedio: "R$ 15.000" }
+        ],
+        comunidade: { nome: "Comunidade Consultório High Ticket", membros: 3000 },
+        autoridade: ["Pioneira no conceito High Ticket para saúde no Brasil", "Mais de 3000 consultórios transformados", "Palestras em congressos médicos"],
+        estruturaVendas: ["Página de vendas profissional", "Lista de espera VIP", "Lançamentos estruturados", "Funil de aquecimento WhatsApp"],
         score: 98
       },
-      "thalissonsoares": {
-        nome: "Thalisson Soares",
-        nicho: "Marketing Digital",
-        seguidores: 850000,
-        engajamento: 4.5,
-        infoprodutos: ["Curso Tráfego Pago", "Mentoria Marketing"],
-        plataformas: ["Instagram", "Hotmart"],
+      "naborges": {
+        nome: "Natanael Borges",
+        nicho: "Vendas High Ticket",
+        publicoAlvo: "Empreendedores, coaches, consultores",
+        seguidores: 520000,
+        infoprodutos: [
+          { nome: "Método Vendas High Ticket", tipo: "Curso online", ticketMedio: "R$ 1.997" },
+          { nome: "Mentoria Closer", tipo: "Mentoria em grupo", ticketMedio: "R$ 8.000" },
+          { nome: "Imersão Presencial", tipo: "Evento 3 dias", ticketMedio: "R$ 5.000" }
+        ],
+        comunidade: { nome: "Comunidade Closers", membros: 2500 },
+        autoridade: ["Referência em vendas high ticket no Brasil", "Podcast sobre vendas", "Lives semanais"],
+        estruturaVendas: ["Página de vendas", "Webinários de lançamento", "Equipe de closers"],
+        score: 95
+      },
+      "ladeirarodrigo": {
+        nome: "Rodrigo Ladeira",
+        nicho: "Marketing Digital e Lançamentos",
+        publicoAlvo: "Infoprodutores, experts digitais",
+        seguidores: 380000,
+        infoprodutos: [
+          { nome: "Fórmula de Lançamento Adaptada", tipo: "Curso completo", ticketMedio: "R$ 2.497" },
+          { nome: "Mentoria Scale", tipo: "Mentoria para escalar", ticketMedio: "R$ 12.000" }
+        ],
+        comunidade: { nome: "Comunidade Lançadores", membros: 1800 },
+        autoridade: ["Especialista em lançamentos digitais", "Cases de 7 dígitos", "Participação em podcasts"],
+        estruturaVendas: ["Funil perpétuo", "Lançamentos semente", "VSL otimizada"],
         score: 92
       },
-      "belabelinha": {
-        nome: "Bela Gil",
-        nicho: "Alimentação Saudável",
-        seguidores: 3200000,
-        engajamento: 3.2,
-        infoprodutos: ["Curso de Culinária Natural", "Ebooks de Receitas"],
-        plataformas: ["Instagram", "YouTube"],
+      "natanaelliveira": {
+        nome: "Natanael Oliveira",
+        nicho: "Negócios Digitais e Infoprodutos",
+        publicoAlvo: "Empreendedores digitais iniciantes e intermediários",
+        seguidores: 450000,
+        infoprodutos: [
+          { nome: "Máquina de Vendas Online", tipo: "Curso + Comunidade", ticketMedio: "R$ 1.497" },
+          { nome: "Mentoria Diamante", tipo: "Acompanhamento 6 meses", ticketMedio: "R$ 10.000" }
+        ],
+        comunidade: { nome: "Comunidade MVO", membros: 5000 },
+        autoridade: ["Um dos pioneiros do marketing digital no Brasil", "Autor de livros", "Milhões em vendas"],
+        estruturaVendas: ["Evergreen automatizado", "Lançamentos anuais", "Página de vendas otimizada"],
+        score: 94
+      },
+      "joaofinancas": {
+        nome: "João Victorino",
+        nicho: "Educação Financeira",
+        publicoAlvo: "Profissionais que querem organizar finanças e investir",
+        seguidores: 290000,
+        infoprodutos: [
+          { nome: "Método Investidor Inteligente", tipo: "Curso online", ticketMedio: "R$ 997" },
+          { nome: "Mentoria Liberdade Financeira", tipo: "Mentoria em grupo", ticketMedio: "R$ 3.500" }
+        ],
+        comunidade: { nome: "Comunidade Investidores", membros: 1200 },
+        autoridade: ["Certificado pela ANBIMA", "Colunista de portais financeiros", "Podcast semanal"],
+        estruturaVendas: ["Webinários de venda", "Lista VIP", "Funil de nutrição"],
+        score: 85
+      },
+      "drapatriciacaldas": {
+        nome: "Dra. Patricia Caldas",
+        nicho: "Marketing Médico",
+        publicoAlvo: "Médicos e profissionais de saúde",
+        seguidores: 95000,
+        infoprodutos: [
+          { nome: "Marketing Médico na Prática", tipo: "Curso com módulos", ticketMedio: "R$ 1.997" },
+          { nome: "Mentoria Consultório Cheio", tipo: "Mentoria 4 meses", ticketMedio: "R$ 6.000" }
+        ],
+        comunidade: { nome: "Grupo Médicos Digitais", membros: 800 },
+        autoridade: ["Médica e especialista em marketing", "Palestrante em congressos", "Cases de sucesso documentados"],
+        estruturaVendas: ["Página de vendas", "Lançamentos via Instagram", "Lista de espera"],
         score: 88
       },
-      "caborato": {
-        nome: "Caio Carneiro",
-        nicho: "Vendas / Empreendedorismo",
-        seguidores: 1800000,
-        engajamento: 4.0,
-        infoprodutos: ["Livro Seja Foda", "Palestras", "Mentorias"],
-        plataformas: ["Instagram", "YouTube"],
-        score: 90
+      "drleandrotwin": {
+        nome: "Dr. Leandro Twin",
+        nicho: "Saúde, Fitness e Medicina Esportiva",
+        publicoAlvo: "Médicos, nutricionistas, personal trainers",
+        seguidores: 2800000,
+        infoprodutos: [
+          { nome: "Curso Prescrição do Exercício", tipo: "Curso para profissionais", ticketMedio: "R$ 1.497" },
+          { nome: "Congresso Twin", tipo: "Evento presencial", ticketMedio: "R$ 800" }
+        ],
+        comunidade: { nome: "Comunidade Twin Science", membros: 4500 },
+        autoridade: ["Médico referência em saúde no YouTube", "Milhões de seguidores", "Autor de livros"],
+        estruturaVendas: ["Página de vendas", "Lançamentos estruturados", "Parcerias estratégicas"],
+        score: 91
       }
     };
 
-    const influencer = influencerData[handle.toLowerCase()] || {
+    const expert = expertData[handle.toLowerCase()] || {
       nome: handle,
       nicho: "Não identificado",
-      seguidores: Math.floor(Math.random() * 50000) + 5000,
-      engajamento: Math.random() * 3 + 1,
+      publicoAlvo: "Não identificado",
+      seguidores: Math.floor(Math.random() * 20000) + 5000,
       infoprodutos: [],
-      plataformas: ["Instagram"],
-      score: Math.floor(Math.random() * 30) + 40
+      comunidade: null,
+      autoridade: [],
+      estruturaVendas: [],
+      score: Math.floor(Math.random() * 30) + 30
     };
 
     const formatFollowers = (n: number) => {
@@ -99,53 +156,78 @@ const analyzeInfluencerFit = tool(
     const qualificationReasons: string[] = [];
     const riskFactors: string[] = [];
 
-    if (influencer.seguidores >= 10000) {
-      qualificationReasons.push(`Base de seguidores sólida: ${formatFollowers(influencer.seguidores)}`);
+    if (expert.infoprodutos.length > 0) {
+      const hasHighTicket = expert.infoprodutos.some(p => {
+        const price = parseInt(p.ticketMedio.replace(/\D/g, ''));
+        return price >= 1000;
+      });
+      if (hasHighTicket) {
+        qualificationReasons.push(`Infoproduto estruturado HIGH TICKET: ${expert.infoprodutos.map(p => `${p.nome} (${p.ticketMedio})`).join(", ")}`);
+      } else {
+        riskFactors.push("Ticket médio abaixo de R$1.000");
+      }
     } else {
-      riskFactors.push(`Seguidores abaixo do mínimo (10k): apenas ${formatFollowers(influencer.seguidores)}`);
+      riskFactors.push("Sem infoprodutos estruturados identificados");
     }
 
-    if (influencer.engajamento >= 3) {
-      qualificationReasons.push(`Excelente taxa de engajamento: ${influencer.engajamento.toFixed(1)}%`);
-    } else if (influencer.engajamento >= 2) {
-      qualificationReasons.push(`Taxa de engajamento razoável: ${influencer.engajamento.toFixed(1)}%`);
+    if (expert.publicoAlvo.toLowerCase().includes("médico") || 
+        expert.publicoAlvo.toLowerCase().includes("saúde") ||
+        expert.publicoAlvo.toLowerCase().includes("profissionais")) {
+      qualificationReasons.push(`Nicho definido com público premium: ${expert.publicoAlvo}`);
+    } else if (expert.nicho !== "Não identificado") {
+      qualificationReasons.push(`Nicho: ${expert.nicho} | Público: ${expert.publicoAlvo}`);
     } else {
-      riskFactors.push(`Engajamento baixo: ${influencer.engajamento.toFixed(1)}%`);
+      riskFactors.push("Nicho não definido claramente");
     }
 
-    if (influencer.infoprodutos.length > 0) {
-      qualificationReasons.push(`Já vende infoprodutos: ${influencer.infoprodutos.join(", ")}`);
+    if (expert.comunidade && expert.comunidade.membros >= 500) {
+      qualificationReasons.push(`Comunidade paga ativa: ${expert.comunidade.nome} (${expert.comunidade.membros.toLocaleString('pt-BR')} membros)`);
+    } else if (expert.comunidade) {
+      riskFactors.push(`Comunidade pequena: apenas ${expert.comunidade.membros} membros (mínimo 500)`);
     } else {
-      riskFactors.push("Não possui infoprodutos identificados");
+      riskFactors.push("Sem comunidade paga identificada");
     }
 
-    qualificationReasons.push(`Nicho: ${influencer.nicho}`);
-    qualificationReasons.push(`Presente em: ${influencer.plataformas.join(", ")}`);
+    if (expert.autoridade.length > 0) {
+      qualificationReasons.push(`Autoridade comprovada: ${expert.autoridade.join("; ")}`);
+    } else {
+      riskFactors.push("Sem indicadores de autoridade no nicho");
+    }
+
+    if (expert.estruturaVendas.length >= 2) {
+      qualificationReasons.push(`Estrutura de vendas profissional: ${expert.estruturaVendas.join(", ")}`);
+    } else {
+      riskFactors.push("Estrutura de vendas básica ou inexistente");
+    }
+
+    qualificationReasons.push(`Base de seguidores: ${formatFollowers(expert.seguidores)}`);
 
     const result = {
       _metadata: {
         source: "simulated",
-        note: "Dados de demonstração. Em produção, conectar a APIs como Social Blade, HypeAuditor, ou Instagram Graph API."
+        note: "Dados de demonstração. Em produção, conectar a APIs como Social Blade, HypeAuditor, e análise manual de perfis."
       },
       timestamp,
       instagram_handle: `@${handle}`,
       analysis: {
-        score: influencer.score,
-        qualified: influencer.score >= 75,
-        nome: influencer.nome,
-        nicho: influencer.nicho,
-        seguidores: influencer.seguidores,
-        seguidores_formatado: formatFollowers(influencer.seguidores),
-        engajamento: `${influencer.engajamento.toFixed(1)}%`,
-        infoprodutos: influencer.infoprodutos,
-        plataformas: influencer.plataformas,
+        score: expert.score,
+        qualified: expert.score >= 70,
+        nome: expert.nome,
+        nicho: expert.nicho,
+        publicoAlvo: expert.publicoAlvo,
+        seguidores: expert.seguidores,
+        seguidores_formatado: formatFollowers(expert.seguidores),
+        infoprodutos: expert.infoprodutos,
+        comunidade: expert.comunidade,
+        autoridade: expert.autoridade,
+        estruturaVendas: expert.estruturaVendas,
         criteria_checked: criteria
       },
       match_reasons: qualificationReasons,
       risk_factors: riskFactors,
-      recommendation: influencer.score >= 75 
-        ? "QUALIFICADO - Prosseguir com abordagem" 
-        : "NÃO QUALIFICADO - Não atende critérios mínimos"
+      recommendation: expert.score >= 70 
+        ? "QUALIFICADO - Expert High Ticket ideal para parceria" 
+        : "NÃO QUALIFICADO - Não atende critérios de expert high ticket"
     };
 
     return {
@@ -154,12 +236,12 @@ const analyzeInfluencerFit = tool(
   }
 );
 
-const getInfluencerContact = tool(
-  'get_influencer_contact',
-  'Busca informações de contato de um influenciador para abordagem comercial. Retorna email comercial, assessoria, e sugestões de abordagem personalizada.',
+const getExpertContact = tool(
+  'get_expert_contact',
+  'Busca informações de contato de um expert/mentor para abordagem comercial. Retorna email comercial, assessoria, e sugestões de abordagem personalizada para parcerias high ticket.',
   {
-    instagram_handle: z.string().describe("O @ do Instagram do influenciador"),
-    approach_type: z.enum(["parceria", "afiliado", "licenciamento", "collab"]).optional().describe("Tipo de abordagem pretendida")
+    instagram_handle: z.string().describe("O @ do Instagram do expert/mentor"),
+    approach_type: z.enum(["parceria", "afiliado", "licenciamento", "collab", "whitelabel"]).optional().describe("Tipo de abordagem pretendida")
   },
   async (args) => {
     const timestamp = new Date().toISOString();
@@ -173,54 +255,70 @@ const getInfluencerContact = tool(
       whatsapp_comercial: string | null;
       tempo_resposta: string;
       melhor_abordagem: string;
+      gatilhos: string[];
     }> = {
-      "nfranca": {
-        nome: "Nathalia França",
-        email_comercial: "comercial@nathaliafranca.com.br",
-        assessoria: "Agência XYZ",
-        whatsapp_comercial: null,
-        tempo_resposta: "3-5 dias úteis",
-        melhor_abordagem: "Email com proposta detalhada e números"
-      },
-      "virginiaramos": {
-        nome: "Virginia Fonseca",
-        email_comercial: "parcerias@wepink.com.br",
-        assessoria: "WePink Assessoria",
-        whatsapp_comercial: null,
-        tempo_resposta: "7-14 dias úteis",
-        melhor_abordagem: "Via assessoria apenas"
-      },
-      "pfranca": {
-        nome: "Pablo Marçal",
-        email_comercial: "negocios@pfranca.com.br",
-        assessoria: "Equipe Marçal",
+      "nandamac": {
+        nome: "Nanda Mac Dowell",
+        email_comercial: "parcerias@nandamac.com",
+        assessoria: "Equipe Consultório High Ticket",
         whatsapp_comercial: null,
         tempo_resposta: "5-7 dias úteis",
-        melhor_abordagem: "Email objetivo com proposta de valor clara"
+        melhor_abordagem: "Email com proposta que agregue valor para profissionais de saúde",
+        gatilhos: ["Foco em resultados para médicos", "Mencionar cases do nicho saúde", "Propor algo que complemente o método dela"]
       },
-      "thalissonsoares": {
-        nome: "Thalisson Soares",
-        email_comercial: "contato@thalissonsoares.com",
+      "naborges": {
+        nome: "Natanael Borges",
+        email_comercial: "comercial@naborges.com.br",
+        assessoria: "Equipe NB",
+        whatsapp_comercial: null,
+        tempo_resposta: "3-5 dias úteis",
+        melhor_abordagem: "Proposta direta com números e resultados",
+        gatilhos: ["Falar em ROI e conversão", "Cases de vendas high ticket", "Proposta objetiva e profissional"]
+      },
+      "ladeirarodrigo": {
+        nome: "Rodrigo Ladeira",
+        email_comercial: "contato@rodrigoladeira.com.br",
         assessoria: null,
         whatsapp_comercial: "(11) 9xxxx-xxxx",
-        tempo_resposta: "1-3 dias úteis",
-        melhor_abordagem: "DM ou WhatsApp comercial"
+        tempo_resposta: "3-5 dias úteis",
+        melhor_abordagem: "Email ou DM com case de lançamento",
+        gatilhos: ["Resultados de lançamentos", "Métricas de conversão", "Proposta de parceria em lançamento"]
       },
-      "belabelinha": {
-        nome: "Bela Gil",
-        email_comercial: "comercial@belagil.com.br",
-        assessoria: "Assessoria pessoal",
+      "natanaelliveira": {
+        nome: "Natanael Oliveira",
+        email_comercial: "parcerias@natanaeloliveira.com.br",
+        assessoria: "Equipe MVO",
         whatsapp_comercial: null,
         tempo_resposta: "5-7 dias úteis",
-        melhor_abordagem: "Email com alinhamento de valores"
+        melhor_abordagem: "Email formal com proposta estruturada",
+        gatilhos: ["Histórico no mercado digital", "Complementariedade de produtos", "Potencial de escala"]
       },
-      "caborato": {
-        nome: "Caio Carneiro",
-        email_comercial: "parcerias@caiocarneiro.com.br",
-        assessoria: "Seja Foda Assessoria",
+      "joaofinancas": {
+        nome: "João Victorino",
+        email_comercial: "contato@joaofinancas.com.br",
+        assessoria: null,
+        whatsapp_comercial: "(11) 9xxxx-xxxx",
+        tempo_resposta: "2-4 dias úteis",
+        melhor_abordagem: "DM ou email direto",
+        gatilhos: ["Educação financeira", "Valor para a audiência", "Proposta clara de parceria"]
+      },
+      "drapatriciacaldas": {
+        nome: "Dra. Patricia Caldas",
+        email_comercial: "comercial@drapatriciacaldas.com.br",
+        assessoria: null,
+        whatsapp_comercial: "(11) 9xxxx-xxxx",
+        tempo_resposta: "2-3 dias úteis",
+        melhor_abordagem: "Email ou DM mencionando nicho médico",
+        gatilhos: ["Soluções para médicos", "Marketing ético", "Cases de consultórios"]
+      },
+      "drleandrotwin": {
+        nome: "Dr. Leandro Twin",
+        email_comercial: "comercial@leandrotwin.com.br",
+        assessoria: "Equipe Twin",
         whatsapp_comercial: null,
-        tempo_resposta: "3-5 dias úteis",
-        melhor_abordagem: "Email com case de sucesso similar"
+        tempo_resposta: "7-14 dias úteis",
+        melhor_abordagem: "Apenas via assessoria com proposta robusta",
+        gatilhos: ["Ciência e evidências", "Público fitness/saúde", "Proposta de grande impacto"]
       }
     };
 
@@ -230,40 +328,47 @@ const getInfluencerContact = tool(
       assessoria: null,
       whatsapp_comercial: null,
       tempo_resposta: "Variável",
-      melhor_abordagem: "DM no Instagram ou email"
+      melhor_abordagem: "DM no Instagram ou email",
+      gatilhos: ["Proposta de valor clara", "Alinhamento com o nicho", "Resultados comprovados"]
     };
 
     const approachSuggestions: Record<string, string[]> = {
       parceria: [
-        "Apresente o valor que você trará para a audiência dele",
-        "Mostre cases de parcerias anteriores bem-sucedidas",
-        "Seja específico sobre entregas e contrapartidas",
-        "Mencione o alinhamento com o nicho dele"
+        "Apresente como sua solução complementa o produto dele",
+        "Mostre cases de resultados com experts similares",
+        "Proponha modelo ganha-ganha com métricas claras",
+        "Destaque o benefício para a audiência dele"
       ],
       afiliado: [
-        "Destaque as comissões e modelo de pagamento",
-        "Apresente materiais de divulgação prontos",
-        "Mostre conversão média de outros afiliados",
-        "Ofereça período de teste do produto"
+        "Apresente comissões atrativas (mínimo 30% para high ticket)",
+        "Ofereça materiais de divulgação prontos e testados",
+        "Mostre conversão média e ticket médio",
+        "Proponha bônus exclusivo para a audiência dele"
       ],
       licenciamento: [
-        "Apresente proposta de royalties clara",
-        "Mostre potencial de escala do produto",
-        "Detalhe suporte e produção que você oferece",
-        "Inclua projeção de faturamento"
+        "Apresente modelo de royalties claro",
+        "Mostre potencial de escala sem esforço operacional dele",
+        "Detalhe todo suporte que você oferece",
+        "Inclua projeção conservadora de faturamento"
       ],
       collab: [
-        "Proponha conteúdo que beneficie ambas as audiências",
-        "Seja flexível sobre formatos (lives, reels, stories)",
-        "Sugira datas e cronograma realista",
-        "Mostre como as audiências se complementam"
+        "Proponha conteúdo que una as duas expertises",
+        "Sugira formatos: live conjunta, podcast, workshop",
+        "Mostre como as audiências se complementam",
+        "Seja flexível em datas e formatos"
+      ],
+      whitelabel: [
+        "Apresente a solução pronta para ele vender como dele",
+        "Mostre margem de lucro e precificação sugerida",
+        "Ofereça suporte técnico e atualizações",
+        "Proponha exclusividade no nicho se possível"
       ]
     };
 
     const result = {
       _metadata: {
         source: "simulated",
-        note: "Dados de demonstração. Em produção, conectar a APIs de prospecção e bases de contatos verificados."
+        note: "Dados de demonstração. Em produção, conectar a bases de contatos verificados e CRM."
       },
       timestamp,
       instagram_handle: `@${handle}`,
@@ -275,10 +380,11 @@ const getInfluencerContact = tool(
         whatsapp_comercial: contact.whatsapp_comercial,
         tempo_resposta: contact.tempo_resposta,
         melhor_canal: contact.melhor_abordagem,
+        gatilhos_importantes: contact.gatilhos,
         confidence: contactData[handle.toLowerCase()] ? "Alta" : "Média"
       },
       outreach_suggestions: approachSuggestions[approachType] || approachSuggestions.parceria,
-      template_abordagem: `Olá ${contact.nome}! Acompanho seu trabalho no Instagram e admiro como você [mencione algo específico]. Gostaria de propor uma ${approachType} que pode ser muito interessante para sua audiência. Posso enviar mais detalhes?`
+      template_abordagem: `Olá ${contact.nome}! Acompanho seu trabalho e admiro como você [mencionar algo específico do trabalho dele]. Tenho uma proposta de ${approachType} que acredito ser muito interessante para sua audiência de [nicho]. Posso enviar os detalhes?`
     };
 
     return {
@@ -290,7 +396,7 @@ const getInfluencerContact = tool(
 const sdrMcpServer = createSdkMcpServer({
   name: 'sdr',
   version: '1.0.0',
-  tools: [analyzeInfluencerFit, getInfluencerContact]
+  tools: [analyzeExpertFit, getExpertContact]
 });
 
 export interface ChatMessage {
@@ -373,15 +479,15 @@ export interface SubAgentDefinition {
 
 const defaultSubAgents: Record<string, SubAgentDefinition> = {
   researcher: {
-    description: 'Pesquisa e analisa perfis de influenciadores',
-    prompt: 'Você é um pesquisador especializado em análise de influenciadores digitais brasileiros que vendem infoprodutos. Utilize as ferramentas disponíveis para avaliar o perfil, engajamento, nicho e potencial de cada influenciador.',
-    tools: ['mcp__sdr__analyze_influencer_fit'],
+    description: 'Pesquisa e analisa perfis de experts/mentores high ticket',
+    prompt: 'Você é um pesquisador especializado em análise de experts e mentores brasileiros que vendem infoprodutos high ticket. Foco especial em experts que vendem para profissionais de saúde (médicos, dentistas, etc). Utilize as ferramentas para avaliar infoprodutos, comunidade, ticket médio e autoridade.',
+    tools: ['mcp__sdr__analyze_expert_fit'],
     model: 'sonnet'
   },
   outreach_specialist: {
-    description: 'Especialista em abordagem e contato com influenciadores',
-    prompt: 'Você é um especialista em outreach para influenciadores. Seu objetivo é identificar os melhores canais de contato e sugerir abordagens personalizadas baseadas no perfil e nicho do influenciador.',
-    tools: ['mcp__sdr__get_influencer_contact'],
+    description: 'Especialista em abordagem e contato com experts high ticket',
+    prompt: 'Você é um especialista em outreach para experts e mentores high ticket. Seu objetivo é identificar os melhores canais de contato e sugerir abordagens personalizadas para parcerias, afiliação ou licenciamento.',
+    tools: ['mcp__sdr__get_expert_contact'],
     model: 'sonnet'
   }
 };
