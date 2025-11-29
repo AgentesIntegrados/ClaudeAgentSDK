@@ -37,6 +37,30 @@ export function useRankings() {
     return rankings.some(r => r.instagramHandle.replace('@', '').trim().toLowerCase() === normalized);
   }, [rankings]);
 
+  const handleSaveToRanking = useCallback((toolResult: any) => {
+    if (!toolResult?.analysis) return;
+    
+    const { analysis } = toolResult;
+    const rawHandle = String(toolResult.instagram_handle || analysis.nome);
+    const normalizedHandle = rawHandle.replace('@', '').trim().toLowerCase();
+    const isQualified = analysis.qualified ?? (analysis.score >= 70);
+    
+    createRankingMutation.mutate({
+      instagramHandle: normalizedHandle,
+      nome: analysis.nome,
+      nicho: analysis.nicho,
+      publicoAlvo: analysis.publicoAlvo,
+      seguidores: analysis.seguidores,
+      score: analysis.score,
+      qualified: isQualified ? "SIM" : "NAO",
+      infoprodutos: analysis.infoprodutos,
+      comunidade: analysis.comunidade,
+      autoridade: analysis.autoridade,
+      estruturaVendas: analysis.estruturaVendas,
+      analysisData: toolResult,
+    });
+  }, [createRankingMutation]);
+
   const qualifiedRankings = rankings.filter(r => r.score >= 70);
   const disqualifiedRankings = rankings.filter(r => r.score < 70);
 
@@ -48,5 +72,6 @@ export function useRankings() {
     createRankingMutation,
     deleteRankingMutation,
     isInRanking,
+    handleSaveToRanking,
   };
 }

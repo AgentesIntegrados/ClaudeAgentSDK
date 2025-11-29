@@ -46,7 +46,7 @@ const MessageItem = memo(({
       )}>
         {msg.role === "user" ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4" />}
       </div>
-      
+
       <div className="space-y-2">
         <div className={cn(
           "p-3 rounded-lg text-sm leading-relaxed shadow-sm",
@@ -245,12 +245,12 @@ export default function Dashboard() {
   // Extract expert data from tool result and save to ranking
   const handleSaveToRanking = useCallback((toolResult: any) => {
     if (!toolResult?.analysis) return;
-    
+
     const { analysis } = toolResult;
     const rawHandle = String(toolResult.instagram_handle || analysis.nome);
     const normalizedHandle = rawHandle.replace('@', '').trim().toLowerCase();
     const isQualified = analysis.qualified ?? (analysis.score >= 70);
-    
+
     createRankingMutation.mutate({
       instagramHandle: normalizedHandle,
       nome: analysis.nome,
@@ -361,7 +361,7 @@ export default function Dashboard() {
                           ))}
                         </div>
                       )}
-                      
+
                       {/* DESQUALIFICADOS Section */}
                       {rankings.filter(r => r.score < 70).length > 0 && (
                         <div className="space-y-2 mt-4">
@@ -461,7 +461,7 @@ export default function Dashboard() {
                 isInRanking={isInRanking}
               />
             ))}
-            
+
             {isTyping && (
               <div className="flex gap-3">
                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
