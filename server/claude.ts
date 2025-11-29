@@ -3,6 +3,7 @@ import { z } from 'zod';
 import Anthropic from "@anthropic-ai/sdk";
 import { broadcastLog } from "./logger";
 import { cache, CacheKeys, CacheTTL } from "./cache";
+import { mcpManager } from "./mcp-manager";
 
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
@@ -303,7 +304,7 @@ const analyzeExpertFit = tool(
     // Save to cache
     cache.set(cacheKey, result, CacheTTL.EXPERT_ANALYSIS);
     broadcastLog("CACHE", `💾 Salvando no cache: ${handle} (TTL: ${CacheTTL.EXPERT_ANALYSIS / 60}h)`);
-    broadcastLog("TOOL", `Expert ${handle} analisado - Score: ${analysis.score}/100`);
+    broadcastLog("TOOL", `Expert ${handle} analisado - Score: ${expert.score}/100`);
 
     return result;
   }
@@ -512,6 +513,84 @@ const sdrMcpServer = createSdkMcpServer({
   tools: [analyzeExpertFit, getExpertContact]
 });
 
+function createExternalMcpTools() {
+  const externalTools: ReturnType<typeof tool>[] = [];
+  const allMcpTools = mcpManager.getAllTools();
+  
+  for (const { serverId, serverName, tool: mcpTool } of allMcpTools) {
+    const sanitizedServerName = serverName.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    const toolName = `mcp__${sanitizedServerName}__${mcpTool.name}`;
+    
+    const inputSchema = mcpTool.inputSchema as Record<string, any>;
+    let zodSchema: Record<string, z.ZodTypeAny> = {};
+    
+    if (inputSchema?.properties) {
+      for (const [key, prop] of Object.entries(inputSchema.properties)) {
+        const propAny = prop as any;
+        if (propAny.type === 'string') {
+          zodSchema[key] = z.string().optional().describe(propAny.description || key);
+        } else if (propAny.type === 'number') {
+          zodSchema[key] = z.number().optional().describe(propAny.description || key);
+        } else if (propAny.type === 'boolean') {
+          zodSchema[key] = z.boolean().optional().describe(propAny.description || key);
+        } else if (propAny.type === 'array') {
+          zodSchema[key] = z.array(z.any()).optional().describe(propAny.description || key);
+        } else if (propAny.type === 'object') {
+          zodSchema[key] = z.record(z.any()).optional().describe(propAny.description || key);
+        } else {
+          zodSchema[key] = z.any().optional().describe(propAny.description || key);
+        }
+      }
+    }
+    
+    if (Object.keys(zodSchema).length === 0) {
+      zodSchema = { input: z.any().optional().describe('Input for the tool') };
+    }
+    
+    const wrappedTool = tool(
+      toolName,
+      mcpTool.description || `External MCP tool: ${mcpTool.name}`,
+      zodSchema,
+      async (args: Record<string, unknown>) => {
+        broadcastLog("MCP", `Calling external tool: ${mcpTool.name} on ${serverName}`);
+        try {
+          const result = await mcpManager.callTool(serverId, mcpTool.name, args);
+          broadcastLog("MCP", `External tool ${mcpTool.name} completed successfully`);
+          return result;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          broadcastLog("MCP", `External tool ${mcpTool.name} failed: ${errorMessage}`);
+          return { error: errorMessage };
+        }
+      }
+    );
+    
+    externalTools.push(wrappedTool);
+  }
+  
+  return externalTools;
+}
+
+function getAllMcpServers() {
+  const servers: Record<string, ReturnType<typeof createSdkMcpServer>> = {
+    sdr: sdrMcpServer
+  };
+  
+  const externalTools = createExternalMcpTools();
+  if (externalTools.length > 0) {
+    const externalMcpServer = createSdkMcpServer({
+      name: 'external',
+      version: '1.0.0',
+      tools: externalTools
+    });
+    servers['external'] = externalMcpServer;
+  }
+  
+  return servers;
+}
+
+export { getAllMcpServers };
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -672,10 +751,11 @@ export async function processAgentMessage(
     let toolUseResult: ToolUseResult | undefined;
     let resultSessionId = activeSessionId;
 
+    const mcpServers = getAllMcpServers();
     const queryOptions = {
       model: model || DEFAULT_MODEL,
       systemPrompt: systemPrompt,
-      mcpServers: { sdr: sdrMcpServer },
+      mcpServers: mcpServers,
       maxTurns: 10,
       permissionMode: 'bypassPermissions' as const,
       agents: agents,

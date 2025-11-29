@@ -91,7 +91,7 @@ const FileTreeItem = ({ item, level = 0, onSelect, selectedFile }: any) => {
 export default function Architecture() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [projectStructure, setProjectStructure] = useState([]);
+  const [projectStructure, setProjectStructure] = useState<{name: string; type: string; path?: string; children?: any[]}[]>([]);
 
   useEffect(() => {
     fetchProjectStructure().then(setProjectStructure);
