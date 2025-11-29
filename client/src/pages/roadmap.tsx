@@ -8,6 +8,7 @@ interface RoadmapItem {
   description: string;
   status: "completed" | "in_progress" | "planned";
   category: "feature" | "integration" | "improvement";
+  complexity: "simple" | "medium" | "complex";
   technical_details?: string[];
 }
 
@@ -18,7 +19,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Base de dados local com perfis pré-analisados de experts brasileiros",
     status: "completed",
     category: "feature",
+    complexity: "simple",
     technical_details: [
+      "🟢 Complexidade: SIMPLES (1-2 dias)",
       "Dicionário local em server/claude.ts",
       "Análise instantânea sem API externa",
       "Limitado aos perfis cadastrados manualmente"
@@ -30,7 +33,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Buscar dados REAIS de perfis públicos do Instagram via API oficial do Meta",
     status: "planned",
     category: "integration",
+    complexity: "complex",
     technical_details: [
+      "🔴 Complexidade: COMPLEXA (3-4 semanas)",
       "Requer aprovação Meta Business (processo 2-4 semanas)",
       "Acesso a: seguidores, posts, engajamento, bio",
       "Rate limits: 200 chamadas/hora (tier gratuito)",
@@ -44,7 +49,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Métricas avançadas de crescimento e análise de influenciadores",
     status: "planned",
     category: "integration",
+    complexity: "medium",
     technical_details: [
+      "🟡 Complexidade: MÉDIA (3-5 dias)",
       "API paga - Planos a partir de US$ 3.99/mês",
       "Dados: histórico de seguidores, taxa de crescimento, ranking",
       "Suporta múltiplas plataformas (Instagram, YouTube, TikTok)",
@@ -58,7 +65,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Análise profissional de autenticidade e qualidade de audiência",
     status: "planned",
     category: "integration",
+    complexity: "complex",
     technical_details: [
+      "🔴 Complexidade: COMPLEXA (2-3 semanas)",
       "API empresarial - Contato comercial necessário",
       "Detecta seguidores falsos e bots",
       "Análise de engajamento real vs. inflado",
@@ -72,7 +81,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Extração automatizada de dados públicos do Instagram (ATENÇÃO: Violar ToS)",
     status: "planned",
     category: "integration",
+    complexity: "complex",
     technical_details: [
+      "🔴 Complexidade: COMPLEXA (2-3 semanas)",
       "⚠️ RISCO: Viola Termos de Serviço do Instagram",
       "Pode resultar em bloqueio de IP ou conta",
       "Alternativas: Puppeteer, Playwright, Selenium",
@@ -86,7 +97,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Reduzir custos de API e melhorar performance com cache em memória",
     status: "completed",
     category: "improvement",
+    complexity: "simple",
     technical_details: [
+      "🟢 Complexidade: SIMPLES (1-2 dias)",
       "✅ Cache em memória (InMemoryCache) implementado",
       "✅ TTL de 24h para análises de experts",
       "✅ TTL de 24h para dados de contato",
@@ -104,7 +117,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Usar Claude para analisar comentários e bio do expert",
     status: "planned",
     category: "feature",
+    complexity: "medium",
     technical_details: [
+      "🟡 Complexidade: MÉDIA (3-5 dias)",
       "Extrair tom de voz da bio",
       "Analisar sentimento de comentários recentes",
       "Detectar autoridade baseada em linguagem"
@@ -116,7 +131,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Alertas automáticos quando novo expert qualificado é encontrado",
     status: "planned",
     category: "feature",
+    complexity: "medium",
     technical_details: [
+      "🟡 Complexidade: MÉDIA (4-6 dias)",
       "Integração com Slack/Discord/Telegram",
       "Email via SendGrid/Resend",
       "Push notifications via OneSignal"
@@ -128,7 +145,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Sistema de gestão de relacionamento com experts prospectados",
     status: "planned",
     category: "feature",
+    complexity: "complex",
     technical_details: [
+      "🔴 Complexidade: COMPLEXA (2-3 semanas)",
       "Cadastro automático de leads após análise",
       "Status do funil: Novo → Contato Inicial → Reunião → Proposta → Fechado",
       "Histórico completo de interações",
@@ -142,7 +161,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Cadência de follow-up automático para nurturing de leads",
     status: "planned",
     category: "feature",
+    complexity: "medium",
     technical_details: [
+      "🟡 Complexidade: MÉDIA (5-7 dias)",
       "Template de email personalizado por nicho",
       "Sequência: D0 (introdução) → D3 (case) → D7 (proposta)",
       "Rastreamento de abertura e cliques",
@@ -156,7 +177,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Integração com calendário para agendamento automático de demos",
     status: "planned",
     category: "feature",
+    complexity: "medium",
     technical_details: [
+      "🟡 Complexidade: MÉDIA (3-5 dias)",
       "Integração com Google Calendar/Cal.com",
       "Link personalizado de agendamento no email",
       "Lembretes automáticos (24h e 1h antes)",
@@ -170,7 +193,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Dashboard Kanban para gestão visual do funil comercial",
     status: "planned",
     category: "feature",
+    complexity: "complex",
     technical_details: [
+      "🔴 Complexidade: COMPLEXA (2-3 semanas)",
       "Drag-and-drop entre estágios",
       "Métricas: Taxa de conversão por etapa",
       "Tempo médio em cada estágio",
@@ -184,7 +209,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Templates de proposta personalizados por nicho com IA",
     status: "planned",
     category: "feature",
+    complexity: "medium",
     technical_details: [
+      "🟡 Complexidade: MÉDIA (5-7 dias)",
       "Claude gera proposta baseada no perfil do expert",
       "Calcula ROI estimado (com base em seguidores)",
       "Exporta em PDF profissional",
@@ -198,7 +225,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Fluxo completo de assinatura e gestão de contratos",
     status: "planned",
     category: "feature",
+    complexity: "complex",
     technical_details: [
+      "🔴 Complexidade: COMPLEXA (1-2 semanas)",
       "Template de contrato editável",
       "Integração com DocuSign/PandaDoc",
       "Notificação de assinatura pendente",
@@ -212,7 +241,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Controle de comissões da equipe de vendas",
     status: "planned",
     category: "feature",
+    complexity: "medium",
     technical_details: [
+      "🟡 Complexidade: MÉDIA (4-6 dias)",
       "Cálculo automático de comissão por fechamento",
       "Regras personalizáveis (% sobre valor, tiering)",
       "Dashboard de performance individual",
@@ -226,7 +257,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Contato direto com leads via WhatsApp automatizado",
     status: "planned",
     category: "integration",
+    complexity: "complex",
     technical_details: [
+      "🔴 Complexidade: COMPLEXA (2-3 semanas)",
       "API oficial do WhatsApp Business",
       "Templates de mensagem pré-aprovados",
       "Envio em massa (respeitando limites)",
@@ -240,7 +273,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "IA prevê probabilidade de conversão de cada lead",
     status: "planned",
     category: "feature",
+    complexity: "complex",
     technical_details: [
+      "🔴 Complexidade: COMPLEXA (3-4 semanas)",
       "Machine Learning com histórico de vendas",
       "Score preditivo (0-100%) de fechamento",
       "Sugestão de melhor momento para contato",
@@ -254,7 +289,9 @@ const roadmapItems: RoadmapItem[] = [
     description: "Gestão de ações comerciais com lembretes inteligentes",
     status: "planned",
     category: "feature",
+    complexity: "medium",
     technical_details: [
+      "🟡 Complexidade: MÉDIA (4-6 dias)",
       "Tarefas automáticas (ex: 'Ligar em 3 dias')",
       "Lembretes via email/push/Slack",
       "Integração com calendário",
@@ -309,18 +346,42 @@ export default function Roadmap() {
         </div>
 
         {/* Legend */}
-        <div className="bg-card border border-border rounded-lg p-4 mb-6 flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-green-400" />
-            <span className="text-sm text-muted-foreground">Concluído</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-yellow-400" />
-            <span className="text-sm text-muted-foreground">Em Progresso</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Circle className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-muted-foreground">Planejado</span>
+        <div className="bg-card border border-border rounded-lg p-4 mb-6">
+          <div className="flex flex-wrap gap-6">
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground mb-1">Status</div>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  <span className="text-sm text-muted-foreground">Concluído</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-yellow-400" />
+                  <span className="text-sm text-muted-foreground">Em Progresso</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Circle className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-muted-foreground">Planejado</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground mb-1">Complexidade</div>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-400">🟢</span>
+                  <span className="text-sm text-muted-foreground">Simples (1-2 dias)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-yellow-400">🟡</span>
+                  <span className="text-sm text-muted-foreground">Médio (3-7 dias)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-red-400">🔴</span>
+                  <span className="text-sm text-muted-foreground">Complexo (2-4 semanas)</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -335,7 +396,7 @@ export default function Roadmap() {
                 <div className="shrink-0 mt-1">{getStatusIcon(item.status)}</div>
                 
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h3 className="font-semibold text-lg">{item.title}</h3>
                     <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
                       item.status === "completed" ? "bg-green-500/20 text-green-400" :
@@ -345,6 +406,14 @@ export default function Roadmap() {
                       {getCategoryIcon(item.category)}
                       {item.category === "integration" ? "Integração" :
                        item.category === "feature" ? "Funcionalidade" : "Melhoria"}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                      item.complexity === "simple" ? "bg-green-500/20 text-green-400" :
+                      item.complexity === "medium" ? "bg-yellow-500/20 text-yellow-400" :
+                      "bg-red-500/20 text-red-400"
+                    }`}>
+                      {item.complexity === "simple" ? "🟢 Simples" :
+                       item.complexity === "medium" ? "🟡 Médio" : "🔴 Complexo"}
                     </span>
                   </div>
                   
