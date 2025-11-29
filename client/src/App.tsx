@@ -19,6 +19,7 @@ function Router() {
       <Route path="/terminal" component={LiveLogs} />
       <Route path="/roadmap" component={Roadmap} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );
