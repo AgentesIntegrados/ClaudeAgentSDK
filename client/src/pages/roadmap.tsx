@@ -1,5 +1,8 @@
+import { useState, useMemo } from "react";
 import Layout from "@/components/layout";
-import { CheckCircle2, Circle, Clock, Code, Database, Zap, Lock } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Code, Database, Zap, Lock, Filter, X, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface RoadmapItem {
   id: string;
@@ -313,7 +316,76 @@ const roadmapItems: RoadmapItem[] = [
   }
 ];
 
+type StatusFilter = "all" | "completed" | "in_progress" | "planned";
+type ComplexityFilter = "all" | "simple" | "medium" | "complex";
+type CategoryFilter = "all" | "feature" | "integration" | "improvement";
+
 export default function Roadmap() {
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [complexityFilter, setComplexityFilter] = useState<ComplexityFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [quickWinsMode, setQuickWinsMode] = useState(false);
+
+  const counts = useMemo(() => {
+    const simple = roadmapItems.filter(i => i.complexity === "simple" && i.status !== "completed").length;
+    const medium = roadmapItems.filter(i => i.complexity === "medium" && i.status !== "completed").length;
+    const complex = roadmapItems.filter(i => i.complexity === "complex" && i.status !== "completed").length;
+    const completed = roadmapItems.filter(i => i.status === "completed").length;
+    const inProgress = roadmapItems.filter(i => i.status === "in_progress").length;
+    const planned = roadmapItems.filter(i => i.status === "planned").length;
+    return { simple, medium, complex, completed, inProgress, planned, total: roadmapItems.length };
+  }, []);
+
+  const filteredItems = useMemo(() => {
+    let items = [...roadmapItems];
+
+    if (quickWinsMode) {
+      items = items.filter(i => i.complexity === "simple" && i.status !== "completed");
+    } else {
+      if (statusFilter !== "all") {
+        items = items.filter(i => i.status === statusFilter);
+      }
+      if (complexityFilter !== "all") {
+        items = items.filter(i => i.complexity === complexityFilter);
+      }
+      if (categoryFilter !== "all") {
+        items = items.filter(i => i.category === categoryFilter);
+      }
+    }
+
+    items.sort((a, b) => {
+      const statusOrder = { in_progress: 0, planned: 1, completed: 2 };
+      const complexityOrder = { simple: 0, medium: 1, complex: 2 };
+      
+      if (statusOrder[a.status] !== statusOrder[b.status]) {
+        return statusOrder[a.status] - statusOrder[b.status];
+      }
+      return complexityOrder[a.complexity] - complexityOrder[b.complexity];
+    });
+
+    return items;
+  }, [statusFilter, complexityFilter, categoryFilter, quickWinsMode]);
+
+  const hasActiveFilters = statusFilter !== "all" || complexityFilter !== "all" || categoryFilter !== "all" || quickWinsMode;
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setComplexityFilter("all");
+    setCategoryFilter("all");
+    setQuickWinsMode(false);
+  };
+
+  const toggleQuickWins = () => {
+    if (quickWinsMode) {
+      setQuickWinsMode(false);
+    } else {
+      setQuickWinsMode(true);
+      setStatusFilter("all");
+      setComplexityFilter("all");
+      setCategoryFilter("all");
+    }
+  };
+
   const getStatusIcon = (status: RoadmapItem["status"]) => {
     switch (status) {
       case "completed":
@@ -357,114 +429,212 @@ export default function Roadmap() {
           </p>
         </div>
 
-        {/* Legend */}
+        {/* Summary Counts */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+          <div className="bg-card border border-border rounded-lg p-3 text-center" data-testid="count-simple">
+            <div className="text-2xl font-bold text-green-400">{counts.simple}</div>
+            <div className="text-xs text-muted-foreground">🟢 Simples restantes</div>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-3 text-center" data-testid="count-medium">
+            <div className="text-2xl font-bold text-yellow-400">{counts.medium}</div>
+            <div className="text-xs text-muted-foreground">🟡 Médio restantes</div>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-3 text-center" data-testid="count-complex">
+            <div className="text-2xl font-bold text-red-400">{counts.complex}</div>
+            <div className="text-xs text-muted-foreground">🔴 Complexo restantes</div>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-3 text-center" data-testid="count-completed">
+            <div className="text-2xl font-bold text-green-500">{counts.completed}</div>
+            <div className="text-xs text-muted-foreground">Concluídos</div>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-3 text-center" data-testid="count-in-progress">
+            <div className="text-2xl font-bold text-yellow-500">{counts.inProgress}</div>
+            <div className="text-xs text-muted-foreground">Em Progresso</div>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-3 text-center" data-testid="count-planned">
+            <div className="text-2xl font-bold text-gray-400">{counts.planned}</div>
+            <div className="text-xs text-muted-foreground">Planejados</div>
+          </div>
+        </div>
+
+        {/* Filters */}
         <div className="bg-card border border-border rounded-lg p-4 mb-6">
-          <div className="flex flex-wrap gap-6">
-            <div className="space-y-2">
-              <div className="text-xs font-semibold text-muted-foreground mb-1">Status</div>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  <span className="text-sm text-muted-foreground">Concluído</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-yellow-400" />
-                  <span className="text-sm text-muted-foreground">Em Progresso</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Circle className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-muted-foreground">Planejado</span>
-                </div>
-              </div>
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Filtros</span>
+            {hasActiveFilters && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearFilters}
+                className="ml-auto h-7 px-2 text-xs"
+                data-testid="button-clear-filters"
+              >
+                <X className="w-3 h-3 mr-1" />
+                Limpar
+              </Button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            {/* Quick Wins Button */}
+            <Button
+              variant={quickWinsMode ? "default" : "outline"}
+              size="sm"
+              onClick={toggleQuickWins}
+              className={quickWinsMode ? "bg-green-600 hover:bg-green-700" : ""}
+              data-testid="button-quick-wins"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Quick Wins ({counts.simple})
+            </Button>
+
+            {/* Status Filter */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs text-muted-foreground self-center mr-1">Status:</span>
+              {(["all", "in_progress", "planned", "completed"] as StatusFilter[]).map((status) => (
+                <Badge
+                  key={status}
+                  variant={statusFilter === status && !quickWinsMode ? "default" : "outline"}
+                  className={`cursor-pointer transition-colors ${quickWinsMode ? "opacity-50" : ""}`}
+                  onClick={() => !quickWinsMode && setStatusFilter(status)}
+                  data-testid={`filter-status-${status}`}
+                >
+                  {status === "all" ? "Todos" : 
+                   status === "completed" ? "Concluído" :
+                   status === "in_progress" ? "Em Progresso" : "Planejado"}
+                </Badge>
+              ))}
             </div>
-            <div className="space-y-2">
-              <div className="text-xs font-semibold text-muted-foreground mb-1">Complexidade</div>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">🟢</span>
-                  <span className="text-sm text-muted-foreground">Simples (1-2 dias)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-400">🟡</span>
-                  <span className="text-sm text-muted-foreground">Médio (3-7 dias)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-red-400">🔴</span>
-                  <span className="text-sm text-muted-foreground">Complexo (2-4 semanas)</span>
-                </div>
-              </div>
+
+            {/* Complexity Filter */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs text-muted-foreground self-center mr-1">Complexidade:</span>
+              {(["all", "simple", "medium", "complex"] as ComplexityFilter[]).map((complexity) => (
+                <Badge
+                  key={complexity}
+                  variant={complexityFilter === complexity && !quickWinsMode ? "default" : "outline"}
+                  className={`cursor-pointer transition-colors ${quickWinsMode ? "opacity-50" : ""}`}
+                  onClick={() => !quickWinsMode && setComplexityFilter(complexity)}
+                  data-testid={`filter-complexity-${complexity}`}
+                >
+                  {complexity === "all" ? "Todos" :
+                   complexity === "simple" ? "🟢 Simples" :
+                   complexity === "medium" ? "🟡 Médio" : "🔴 Complexo"}
+                </Badge>
+              ))}
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs text-muted-foreground self-center mr-1">Categoria:</span>
+              {(["all", "feature", "integration", "improvement"] as CategoryFilter[]).map((category) => (
+                <Badge
+                  key={category}
+                  variant={categoryFilter === category && !quickWinsMode ? "default" : "outline"}
+                  className={`cursor-pointer transition-colors ${quickWinsMode ? "opacity-50" : ""}`}
+                  onClick={() => !quickWinsMode && setCategoryFilter(category)}
+                  data-testid={`filter-category-${category}`}
+                >
+                  {category === "all" ? "Todos" :
+                   category === "feature" ? "Funcionalidade" :
+                   category === "integration" ? "Integração" : "Melhoria"}
+                </Badge>
+              ))}
             </div>
           </div>
         </div>
 
+        {/* Results Count */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm text-muted-foreground">
+            Mostrando {filteredItems.length} de {counts.total} itens
+            {quickWinsMode && <span className="ml-2 text-green-400 font-medium">(Quick Wins)</span>}
+          </span>
+        </div>
+
         {/* Roadmap Timeline */}
         <div className="space-y-4">
-          {roadmapItems.map((item, index) => (
-            <div
-              key={item.id}
-              className="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-colors"
-            >
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 mt-1">{getStatusIcon(item.status)}</div>
+          {filteredItems.length === 0 ? (
+            <div className="bg-card border border-border rounded-lg p-8 text-center" data-testid="empty-state">
+              <p className="text-muted-foreground">Nenhum item encontrado com os filtros selecionados.</p>
+              <Button variant="link" onClick={clearFilters} className="mt-2" data-testid="button-empty-clear-filters">
+                Limpar filtros
+              </Button>
+            </div>
+          ) : (
+            filteredItems.map((item) => (
+              <div
+                key={item.id}
+                className={`bg-card border rounded-lg p-6 hover:border-primary/50 transition-colors ${
+                  item.complexity === "simple" ? "border-green-500/20" :
+                  item.complexity === "medium" ? "border-yellow-500/20" :
+                  "border-red-500/20"
+                }`}
+                data-testid={`roadmap-item-${item.id}`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0 mt-1">{getStatusIcon(item.status)}</div>
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2 flex-wrap">
-                    <h3 className="font-semibold text-lg">{item.title}</h3>
-                    <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
-                      item.status === "completed" ? "bg-green-500/20 text-green-400" :
-                      item.status === "in_progress" ? "bg-yellow-500/20 text-yellow-400" :
-                      "bg-gray-500/20 text-gray-400"
-                    }`}>
-                      {getCategoryIcon(item.category)}
-                      {item.category === "integration" ? "Integração" :
-                       item.category === "feature" ? "Funcionalidade" : "Melhoria"}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      item.complexity === "simple" ? "bg-green-500/20 text-green-400" :
-                      item.complexity === "medium" ? "bg-yellow-500/20 text-yellow-400" :
-                      "bg-red-500/20 text-red-400"
-                    }`}>
-                      {item.complexity === "simple" ? "🟢 Simples" :
-                       item.complexity === "medium" ? "🟡 Médio" : "🔴 Complexo"}
-                    </span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <h3 className="font-semibold text-lg">{item.title}</h3>
+                      <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
+                        item.status === "completed" ? "bg-green-500/20 text-green-400" :
+                        item.status === "in_progress" ? "bg-yellow-500/20 text-yellow-400" :
+                        "bg-gray-500/20 text-gray-400"
+                      }`}>
+                        {getCategoryIcon(item.category)}
+                        {item.category === "integration" ? "Integração" :
+                         item.category === "feature" ? "Funcionalidade" : "Melhoria"}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        item.complexity === "simple" ? "bg-green-500/20 text-green-400" :
+                        item.complexity === "medium" ? "bg-yellow-500/20 text-yellow-400" :
+                        "bg-red-500/20 text-red-400"
+                      }`}>
+                        {item.complexity === "simple" ? "🟢 Simples" :
+                         item.complexity === "medium" ? "🟡 Médio" : "🔴 Complexo"}
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {item.description}
+                    </p>
+
+                    {item.technical_details && (
+                      <details className="mt-3">
+                        <summary className="text-xs font-medium text-primary cursor-pointer hover:underline flex items-center gap-1">
+                          <Lock className="w-3 h-3" />
+                          Detalhes Técnicos
+                        </summary>
+                        <div className="mt-3 pl-4 border-l-2 border-border space-y-1">
+                          {item.technical_details.map((detail, i) => (
+                            <p
+                              key={i}
+                              className={`text-xs font-mono ${
+                                detail.includes("⚠️") ? "text-red-400" :
+                                detail.includes("Custo:") || detail.includes("US$") ? "text-yellow-400" :
+                                "text-muted-foreground"
+                              }`}
+                            >
+                              {detail}
+                            </p>
+                          ))}
+                        </div>
+                      </details>
+                    )}
                   </div>
 
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {item.description}
-                  </p>
-
-                  {item.technical_details && (
-                    <details className="mt-3">
-                      <summary className="text-xs font-medium text-primary cursor-pointer hover:underline flex items-center gap-1">
-                        <Lock className="w-3 h-3" />
-                        Detalhes Técnicos
-                      </summary>
-                      <div className="mt-3 pl-4 border-l-2 border-border space-y-1">
-                        {item.technical_details.map((detail, i) => (
-                          <p
-                            key={i}
-                            className={`text-xs font-mono ${
-                              detail.includes("⚠️") ? "text-red-400" :
-                              detail.includes("Custo:") || detail.includes("US$") ? "text-yellow-400" :
-                              "text-muted-foreground"
-                            }`}
-                          >
-                            {detail}
-                          </p>
-                        ))}
-                      </div>
-                    </details>
-                  )}
-                </div>
-
-                <div className="text-right shrink-0">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {getStatusLabel(item.status)}
-                  </span>
+                  <div className="text-right shrink-0">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {getStatusLabel(item.status)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Summary */}
