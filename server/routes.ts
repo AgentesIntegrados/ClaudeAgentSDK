@@ -5,6 +5,7 @@ import { insertAgentConfigSchema, insertConversationSchema, insertMessageSchema,
 import { z } from "zod";
 import { processAgentMessage, type ChatMessage } from "./claude";
 import { broadcastLog } from "./logger";
+import { cache } from "./cache";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -325,6 +326,37 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete ranking" });
+    }
+  });
+
+  // Cache Management
+  app.get("/api/cache/stats", async (req, res) => {
+    try {
+      const stats = cache.getStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get cache stats" });
+    }
+  });
+
+  app.delete("/api/cache/clear", async (req, res) => {
+    try {
+      cache.clear();
+      broadcastLog("CACHE", "Cache limpo manualmente");
+      res.json({ message: "Cache cleared successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to clear cache" });
+    }
+  });
+
+  app.delete("/api/cache/expert/:handle", async (req, res) => {
+    try {
+      const handle = req.params.handle.toLowerCase();
+      cache.invalidatePattern(`expert:.*:${handle}`);
+      broadcastLog("CACHE", `Cache invalidado para expert: ${handle}`);
+      res.json({ message: `Cache invalidated for ${handle}` });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to invalidate cache" });
     }
   });
 

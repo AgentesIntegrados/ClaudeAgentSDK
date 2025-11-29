@@ -4,12 +4,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchDefaultAgentConfig, updateAgentConfig } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Trash2, Database } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showApiKey, setShowApiKey] = useState(false);
-  
+
   const { data: agentConfig, isLoading } = useQuery({
     queryKey: ["agent-config", "default"],
     queryFn: fetchDefaultAgentConfig,
@@ -120,7 +127,7 @@ export default function Settings() {
                 <span className="font-mono text-xs">{agentConfig?.model || "carregando..."}</span>
               </div>
             </div>
-            
+
             {/* MCP Tools */}
             <div className="mt-4">
               <h3 className="text-sm font-medium mb-3 flex items-center">
@@ -182,7 +189,7 @@ export default function Settings() {
                   </select>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">System Prompt</label>
                 <textarea 
@@ -215,7 +222,7 @@ export default function Settings() {
                   <option value="deny">Negar Tudo</option>
                 </select>
               </div>
-              
+
               <div className="flex items-center justify-between p-3 border border-border rounded-lg">
                 <div>
                   <div className="font-medium text-sm">Limite de Turnos</div>
@@ -279,7 +286,7 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground">
                   Se preenchida, esta chave será usada em vez da chave padrão do sistema.
                 </p>
-                
+
                 {hasCustomKey && (
                   <button
                     onClick={handleClearCustomKey}
@@ -302,6 +309,22 @@ export default function Settings() {
               </div>
             </div>
           </div>
+
+          {/* Cache Management */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                <CardTitle>Sistema de Cache</CardTitle>
+              </div>
+              <CardDescription>
+                Gerenciar cache em memória para otimizar performance e reduzir custos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CacheStats />
+            </CardContent>
+          </Card>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4">
@@ -326,5 +349,95 @@ export default function Settings() {
         </div>
       </div>
     </Layout>
+  );
+}
+
+function CacheStats() {
+  const queryClient = useQueryClient();
+
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["/api/cache/stats"],
+    refetchInterval: 5000, // Auto-refresh every 5s
+  });
+
+  const clearCacheMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/cache/clear", { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to clear cache");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Cache limpo com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["/api/cache/stats"] });
+    },
+    onError: () => {
+      toast.error("Erro ao limpar cache");
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Carregando estatísticas...
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-muted p-4 rounded-lg">
+          <div className="text-sm text-muted-foreground mb-1">Entradas em Cache</div>
+          <div className="text-2xl font-bold">{stats?.size || 0}</div>
+        </div>
+        <div className="bg-muted p-4 rounded-lg">
+          <div className="text-sm text-muted-foreground mb-1">TTL Padrão</div>
+          <div className="text-2xl font-bold">24h</div>
+        </div>
+      </div>
+
+      {stats?.keys && stats.keys.length > 0 && (
+        <div>
+          <div className="text-sm font-medium mb-2">Chaves em Cache:</div>
+          <div className="bg-muted p-3 rounded-lg max-h-40 overflow-y-auto">
+            <ul className="text-xs font-mono space-y-1">
+              {stats.keys.map((key: string) => (
+                <li key={key} className="text-muted-foreground">{key}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={() => clearCacheMutation.mutate()}
+        disabled={clearCacheMutation.isPending || stats?.size === 0}
+      >
+        {clearCacheMutation.isPending ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Limpando...
+          </>
+        ) : (
+          <>
+            <Trash2 className="w-4 h-4 mr-2" />
+            Limpar Cache
+          </>
+        )}
+      </Button>
+
+      <div className="text-xs text-muted-foreground mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+        <strong>ℹ️ Como funciona:</strong>
+        <ul className="mt-2 space-y-1 ml-4 list-disc">
+          <li>Análises de experts são cacheadas por 24h</li>
+          <li>Dados de contato são cacheados por 24h</li>
+          <li>Reduz chamadas à API Claude e custos</li>
+          <li>Limpeza automática a cada 10 minutos</li>
+        </ul>
+      </div>
+    </div>
   );
 }

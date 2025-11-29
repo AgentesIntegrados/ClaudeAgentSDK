@@ -1,7 +1,14 @@
 import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
+import Anthropic from "@anthropic-ai/sdk";
+import { broadcastLog } from "./logger";
+import { cache, CacheKeys, CacheTTL } from "./cache";
 
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || "",
+});
 
 const analyzeExpertFit = tool(
   'analyze_expert_fit',
@@ -21,14 +28,33 @@ const analyzeExpertFit = tool(
       "Autoridade no nicho",
       "Estrutura de vendas"
     ];
-    
+
+    // Check cache first
+    const cacheKey = CacheKeys.expertAnalysis(handle);
+    const cachedResult = cache.get<any>(cacheKey);
+
+    if (cachedResult) {
+      broadcastLog("CACHE", `✅ Cache HIT para expert: ${handle} (${CacheTTL.EXPERT_ANALYSIS / 60}h TTL)`);
+      return {
+        ...cachedResult,
+        _metadata: {
+          ...cachedResult._metadata,
+          cached: true,
+          cache_timestamp: new Date().toISOString(),
+        }
+      };
+    }
+
+    broadcastLog("CACHE", `❌ Cache MISS para expert: ${handle} - Analisando...`);
+    broadcastLog("TOOL", `Analisando expert: ${handle}`);
+
     // ⚠️ SIMULAÇÃO - Em produção, substituir por integração real com:
     // - Instagram Graph API (requer aprovação Meta)
     // - Social Blade API
     // - HypeAuditor API
     // - Scraping ético de perfis públicos
     // Este é apenas um MOCK para demonstração do fluxo do agente
-    
+
     const expertData: Record<string, { 
       nome: string;
       nicho: string;
@@ -211,7 +237,7 @@ const analyzeExpertFit = tool(
                                expert.publicoAlvo.toLowerCase().includes("digital") ||
                                expert.publicoAlvo.toLowerCase().includes("geral") ||
                                expert.publicoAlvo.toLowerCase().includes("consultor");
-    
+
     if (isMedicalTarget && !isNonMedicalTarget) {
       qualificationReasons.push(`✅ Nicho IDEAL: Atende EXCLUSIVAMENTE médicos - ${expert.publicoAlvo}`);
     } else if (isNonMedicalTarget) {
@@ -274,9 +300,12 @@ const analyzeExpertFit = tool(
         : "NÃO QUALIFICADO - Não atende critérios de expert high ticket"
     };
 
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }]
-    };
+    // Save to cache
+    cache.set(cacheKey, result, CacheTTL.EXPERT_ANALYSIS);
+    broadcastLog("CACHE", `💾 Salvando no cache: ${handle} (TTL: ${CacheTTL.EXPERT_ANALYSIS / 60}h)`);
+    broadcastLog("TOOL", `Expert ${handle} analisado - Score: ${analysis.score}/100`);
+
+    return result;
   }
 );
 
@@ -291,7 +320,26 @@ const getExpertContact = tool(
     const timestamp = new Date().toISOString();
     const handle = (args.instagram_handle || "unknown").replace('@', '');
     const approachType = args.approach_type || "parceria";
-    
+
+    // Check cache first
+    const cacheKey = CacheKeys.expertContact(handle);
+    const cachedContact = cache.get<any>(cacheKey);
+
+    if (cachedContact) {
+      broadcastLog("CACHE", `✅ Cache HIT para contato: ${handle}`);
+      return {
+        ...cachedContact,
+        _metadata: {
+          ...cachedContact._metadata,
+          cached: true,
+          cache_timestamp: new Date().toISOString(),
+        }
+      };
+    }
+
+    broadcastLog("CACHE", `❌ Cache MISS para contato: ${handle} - Buscando...`);
+    broadcastLog("TOOL", `Buscando contato para: ${handle}`);
+
     const contactData: Record<string, { 
       nome: string;
       email_comercial: string; 
@@ -449,9 +497,12 @@ const getExpertContact = tool(
       template_abordagem: `Olá ${contact.nome}! Acompanho seu trabalho e admiro como você [mencionar algo específico do trabalho dele]. Tenho uma proposta de ${approachType} que acredito ser muito interessante para sua audiência de [nicho]. Posso enviar os detalhes?`
     };
 
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }]
-    };
+    // Save to cache
+    cache.set(cacheKey, result, CacheTTL.EXPERT_CONTACT);
+    broadcastLog("CACHE", `💾 Salvando contato no cache: ${handle} (TTL: ${CacheTTL.EXPERT_CONTACT / 60}h)`);
+    broadcastLog("TOOL", `Contato encontrado para ${handle}: ${contact.email_comercial || 'DM'}`);
+
+    return result;
   }
 );
 
@@ -522,7 +573,7 @@ export function createSession(): string {
 export function forkSession(originalSessionId: string): string | null {
   const original = sessions.get(originalSessionId);
   if (!original) return null;
-  
+
   const newSessionId = generateSessionId();
   sessions.set(newSessionId, {
     sessionId: newSessionId,
@@ -567,15 +618,15 @@ export async function processAgentMessage(
     subAgents?: Record<string, SubAgentDefinition>;
   }
 ): Promise<AgentResponse> {
-  
+
   let activeSessionId = options?.sessionId;
-  
+
   if (options?.sessionId && options?.forkSession) {
     activeSessionId = forkSession(options.sessionId) || createSession();
   } else if (!activeSessionId) {
     activeSessionId = createSession();
   }
-  
+
   const session = sessions.get(activeSessionId);
   if (session) {
     session.lastActivity = new Date();
@@ -605,7 +656,7 @@ export async function processAgentMessage(
       console.log('[Hook] PreToolUse callback registered');
     }
   }
-  
+
   if (options?.hooks?.postToolUse) {
     for (const hook of options.hooks.postToolUse) {
       console.log('[Hook] PostToolUse callback registered');
@@ -645,7 +696,7 @@ export async function processAgentMessage(
               const toolId = (block as { id?: string }).id || `tool_${Date.now()}`;
               const toolName = block.name;
               const toolInput = block.input as Record<string, unknown>;
-              
+
               pendingToolUse = { id: toolId, name: toolName, input: toolInput };
             }
           }
@@ -660,7 +711,7 @@ export async function processAgentMessage(
               const toolId = toolResultBlock.tool_use_id;
               if (toolId && toolResultBlock.content) {
                 let parsedResult: Record<string, unknown>;
-                
+
                 if (typeof toolResultBlock.content === 'string') {
                   try {
                     parsedResult = JSON.parse(toolResultBlock.content);
@@ -671,7 +722,7 @@ export async function processAgentMessage(
                   const textBlock = toolResultBlock.content.find(
                     (c: unknown) => typeof c === 'object' && c !== null && 'type' in c && (c as { type: string }).type === 'text'
                   ) as { text?: string } | undefined;
-                  
+
                   if (textBlock?.text) {
                     try {
                       parsedResult = JSON.parse(textBlock.text);
@@ -684,14 +735,14 @@ export async function processAgentMessage(
                 } else {
                   parsedResult = toolResultBlock.content as Record<string, unknown>;
                 }
-                
+
                 toolResults.set(toolId, parsedResult);
-                
+
                 if (pendingToolUse && pendingToolUse.id === toolId) {
                   const mcpToolName = pendingToolUse.name.startsWith('mcp__') 
                     ? pendingToolUse.name 
                     : `mcp__sdr__${pendingToolUse.name}`;
-                  
+
                   toolUseResult = {
                     tool: mcpToolName,
                     input: JSON.stringify(pendingToolUse.input, null, 2),
@@ -712,12 +763,12 @@ export async function processAgentMessage(
         resultSessionId = message.session_id;
       }
     }
-    
+
     if (pendingToolUse && !toolUseResult) {
       const mcpToolName = pendingToolUse.name.startsWith('mcp__') 
         ? pendingToolUse.name 
         : `mcp__sdr__${pendingToolUse.name}`;
-      
+
       const storedResult = toolResults.get(pendingToolUse.id);
       toolUseResult = {
         tool: mcpToolName,
