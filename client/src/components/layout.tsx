@@ -19,6 +19,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/architecture", icon: FileCode, label: "Especificação de Arquitetura" },
     { href: "/terminal", icon: Terminal, label: "Logs em Tempo Real" },
+    { href: "/roadmap", icon: Bot, label: "Roadmap" },
     { href: "/settings", icon: Settings, label: "Configurações" },
   ];
 

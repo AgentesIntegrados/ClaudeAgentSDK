@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Architecture from "@/pages/architecture";
 import LiveLogs from "@/pages/terminal";
 import Settings from "@/pages/settings";
+import Roadmap from "@/pages/roadmap";
 
 function Router() {
   return (
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/architecture" component={Architecture} />
       <Route path="/terminal" component={LiveLogs} />
+      <Route path="/roadmap" component={Roadmap} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
