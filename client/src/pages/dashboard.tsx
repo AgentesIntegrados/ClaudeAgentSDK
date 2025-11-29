@@ -163,14 +163,20 @@ export default function Dashboard() {
     if (!toolResult?.analysis) return;
     
     const { analysis } = toolResult;
+    // Normaliza handle: remove @, trim, lowercase
+    const rawHandle = String(toolResult.instagram_handle || analysis.nome);
+    const normalizedHandle = rawHandle.replace('@', '').trim().toLowerCase();
+    // Deriva qualified de forma consistente: score >= 70
+    const isQualified = analysis.qualified ?? (analysis.score >= 70);
+    
     createRankingMutation.mutate({
-      instagramHandle: toolResult.instagram_handle || analysis.nome,
+      instagramHandle: normalizedHandle,
       nome: analysis.nome,
       nicho: analysis.nicho,
       publicoAlvo: analysis.publicoAlvo,
       seguidores: analysis.seguidores,
       score: analysis.score,
-      qualified: analysis.qualified ? "SIM" : "NAO",
+      qualified: isQualified ? "SIM" : "NAO",
       infoprodutos: analysis.infoprodutos,
       comunidade: analysis.comunidade,
       autoridade: analysis.autoridade,

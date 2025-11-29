@@ -299,7 +299,12 @@ export async function registerRoutes(
 
   app.post("/api/rankings", async (req, res) => {
     try {
-      const validated = insertExpertRankingSchema.parse(req.body);
+      // Normaliza o handle antes de validar
+      const body = {
+        ...req.body,
+        instagramHandle: req.body.instagramHandle?.replace('@', '').trim().toLowerCase() || req.body.instagramHandle
+      };
+      const validated = insertExpertRankingSchema.parse(body);
       const existing = await storage.getExpertRankingByHandle(validated.instagramHandle);
       if (existing) {
         return res.status(409).json({ error: "Expert já existe no ranking", existing });
