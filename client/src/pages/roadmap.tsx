@@ -1,4 +1,3 @@
-
 import Layout from "@/components/layout";
 import { CheckCircle2, Circle, Clock, Code, Database, Zap, Lock } from "lucide-react";
 
@@ -96,26 +95,36 @@ const roadmapItems: RoadmapItem[] = [
   },
   {
     id: "6",
-    title: "Sistema de Cache Inteligente",
-    description: "Reduzir custos de API e melhorar performance com cache em memória",
-    status: "completed",
+    title: "Refatoração de Código Claude.ts",
+    description: "Reduzir a complexidade e melhorar a legibilidade do arquivo claude.ts",
+    status: "planned",
     category: "improvement",
     complexity: "simple",
     technical_details: [
-      "🟢 Complexidade: SIMPLES (1-2 dias)",
-      "✅ Cache em memória (InMemoryCache) implementado",
-      "✅ TTL de 24h para análises de experts",
-      "✅ TTL de 24h para dados de contato",
-      "✅ Invalidação por padrão (regex)",
-      "✅ Limpeza automática a cada 10 minutos",
-      "✅ Endpoints de gerenciamento (/api/cache/stats, /clear, /expert/:handle)",
-      "✅ Interface visual em Settings com stats em tempo real",
-      "✅ Logs detalhados de Cache HIT/MISS",
-      "🔮 Upgrade futuro: Migrar para Redis Cloud se necessário (500MB gratuito)"
+      "🟢 Complexidade: SIMPLES (1 dia)",
+      "Dividir funções grandes em menores",
+      "Adicionar comentários explicativos",
+      "Melhorar a nomenclatura de variáveis e funções",
+      "Testes unitários para garantir a funcionalidade"
     ]
   },
   {
     id: "7",
+    title: "Melhoria na Arquitetura de Componentes",
+    description: "Otimizar a estrutura dos componentes React para melhor performance e manutenibilidade",
+    status: "planned",
+    category: "improvement",
+    complexity: "simple",
+    technical_details: [
+      "🟢 Complexidade: SIMPLES (2 dias)",
+      "Revisar e simplificar a hierarquia de componentes",
+      "Utilizar React.memo e useCallback onde apropriado",
+      "Implementar lazy loading para componentes não essenciais",
+      "Padronizar o uso de props"
+    ]
+  },
+  {
+    id: "8",
     title: "Análise de Sentimento com IA",
     description: "Usar Claude para analisar comentários e bio do expert",
     status: "planned",
@@ -129,7 +138,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "8",
+    id: "9",
     title: "Webhook de Notificações",
     description: "Alertas automáticos quando novo expert qualificado é encontrado",
     status: "planned",
@@ -143,7 +152,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "9",
+    id: "10",
     title: "CRM de Leads Qualificados",
     description: "Sistema de gestão de relacionamento com experts prospectados",
     status: "planned",
@@ -159,7 +168,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "10",
+    id: "11",
     title: "Sequência de Emails Automatizada",
     description: "Cadência de follow-up automático para nurturing de leads",
     status: "planned",
@@ -175,7 +184,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "11",
+    id: "12",
     title: "Agendamento de Reuniões",
     description: "Integração com calendário para agendamento automático de demos",
     status: "planned",
@@ -191,7 +200,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "12",
+    id: "13",
     title: "Pipeline de Vendas Visual",
     description: "Dashboard Kanban para gestão visual do funil comercial",
     status: "planned",
@@ -207,7 +216,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "13",
+    id: "14",
     title: "Gerador de Propostas Comerciais",
     description: "Templates de proposta personalizados por nicho com IA",
     status: "planned",
@@ -223,7 +232,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "14",
+    id: "15",
     title: "Automação de Contratos",
     description: "Fluxo completo de assinatura e gestão de contratos",
     status: "planned",
@@ -239,7 +248,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "15",
+    id: "16",
     title: "Sistema de Comissionamento",
     description: "Controle de comissões da equipe de vendas",
     status: "planned",
@@ -255,7 +264,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "16",
+    id: "17",
     title: "Integração com WhatsApp Business",
     description: "Contato direto com leads via WhatsApp automatizado",
     status: "planned",
@@ -271,7 +280,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "17",
+    id: "18",
     title: "Análise Preditiva de Fechamento",
     description: "IA prevê probabilidade de conversão de cada lead",
     status: "planned",
@@ -287,7 +296,7 @@ const roadmapItems: RoadmapItem[] = [
     ]
   },
   {
-    id: "18",
+    id: "19",
     title: "Sistema de Tarefas e Follow-ups",
     description: "Gestão de ações comerciais com lembretes inteligentes",
     status: "planned",
@@ -397,7 +406,7 @@ export default function Roadmap() {
             >
               <div className="flex items-start gap-4">
                 <div className="shrink-0 mt-1">{getStatusIcon(item.status)}</div>
-                
+
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h3 className="font-semibold text-lg">{item.title}</h3>
@@ -419,7 +428,7 @@ export default function Roadmap() {
                        item.complexity === "medium" ? "🟡 Médio" : "🔴 Complexo"}
                     </span>
                   </div>
-                  
+
                   <p className="text-sm text-muted-foreground mb-3">
                     {item.description}
                   </p>
@@ -484,7 +493,7 @@ export default function Roadmap() {
           </div>
           <div className="bg-card border border-border rounded-lg p-4">
             <h4 className="font-semibold text-sm mb-2 text-yellow-400">🎯 Melhorias (2)</h4>
-            <p className="text-xs text-muted-foreground">Cache Inteligente, IA para Sentimento</p>
+            <p className="text-xs text-muted-foreground">Refatoração Claude.ts, Arquitetura de Componentes</p>
           </div>
         </div>
       </div>
