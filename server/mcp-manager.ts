@@ -29,13 +29,33 @@ interface AuthConfig {
 class McpConnectionManager {
   private connections: Map<string, ConnectedServer> = new Map();
 
+  private resolvedSecrets: Map<string, string> = new Map();
+
   private resolveSecret(secretRef: string | null): string | null {
     if (!secretRef) return null;
     const value = process.env[secretRef];
     if (!value) {
       console.warn(`[MCP] Secret ${secretRef} not found in environment`);
+    } else {
+      this.resolvedSecrets.set(secretRef, value);
     }
     return value || null;
+  }
+
+  private sanitizeMessage(message: string): string {
+    let sanitized = message;
+    const entries = Array.from(this.resolvedSecrets.entries());
+    for (const [ref, value] of entries) {
+      if (value && value.length > 4) {
+        const regex = new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        sanitized = sanitized.replace(regex, `[${ref}:***]`);
+      }
+    }
+    sanitized = sanitized.replace(/api_key=[^&\s"']+/gi, "api_key=***");
+    sanitized = sanitized.replace(/token=[^&\s"']+/gi, "token=***");
+    sanitized = sanitized.replace(/Bearer\s+[^\s"']+/gi, "Bearer ***");
+    sanitized = sanitized.replace(/Authorization:\s*[^\s"']+/gi, "Authorization: ***");
+    return sanitized;
   }
 
   private buildAuthenticatedUrl(endpoint: string, server: McpServer): URL {
@@ -160,8 +180,7 @@ class McpConnectionManager {
       return { success: true, tools };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      // Sanitize error message to not expose secrets
-      const sanitizedError = errorMessage.replace(/api_key=[^&\s]+/gi, "api_key=***");
+      const sanitizedError = this.sanitizeMessage(errorMessage);
       console.error(`[MCP] Failed to connect to ${server.name}:`, sanitizedError);
 
       await storage.updateMcpServer(server.id, {
