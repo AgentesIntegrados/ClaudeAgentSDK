@@ -68,7 +68,7 @@ const analyzeExpertFit = tool(
         comunidade: { nome: "Comunidade Closers", membros: 2500 },
         autoridade: ["Referência em vendas high ticket no Brasil", "Podcast sobre vendas", "Lives semanais"],
         estruturaVendas: ["Página de vendas", "Webinários de lançamento", "Equipe de closers"],
-        score: 95
+        score: 45 // REDUZIDO: Não atende médicos (ICP)
       },
       "ladeirarodrigo": {
         nome: "Rodrigo Ladeira",
@@ -82,7 +82,7 @@ const analyzeExpertFit = tool(
         comunidade: { nome: "Comunidade Lançadores", membros: 1800 },
         autoridade: ["Especialista em lançamentos digitais", "Cases de 7 dígitos", "Participação em podcasts"],
         estruturaVendas: ["Funil perpétuo", "Lançamentos semente", "VSL otimizada"],
-        score: 92
+        score: 42 // REDUZIDO: Não atende médicos (ICP)
       },
       "natanaelliveira": {
         nome: "Natanael Oliveira",
@@ -96,7 +96,7 @@ const analyzeExpertFit = tool(
         comunidade: { nome: "Comunidade MVO", membros: 5000 },
         autoridade: ["Um dos pioneiros do marketing digital no Brasil", "Autor de livros", "Milhões em vendas"],
         estruturaVendas: ["Evergreen automatizado", "Lançamentos anuais", "Página de vendas otimizada"],
-        score: 94
+        score: 43 // REDUZIDO: Não atende médicos (ICP)
       },
       "joaofinancas": {
         nome: "João Victorino",
@@ -110,7 +110,7 @@ const analyzeExpertFit = tool(
         comunidade: { nome: "Comunidade Investidores", membros: 1200 },
         autoridade: ["Certificado pela ANBIMA", "Colunista de portais financeiros", "Podcast semanal"],
         estruturaVendas: ["Webinários de venda", "Lista VIP", "Funil de nutrição"],
-        score: 85
+        score: 40 // REDUZIDO: Não atende médicos (ICP)
       },
       "drapatriciacaldas": {
         nome: "Dra. Patricia Caldas",
@@ -205,12 +205,23 @@ const analyzeExpertFit = tool(
       riskFactors.push("Sem infoprodutos estruturados identificados");
     }
 
-    if (expert.publicoAlvo.toLowerCase().includes("médico")) {
-      qualificationReasons.push(`Nicho definido com público premium: ${expert.publicoAlvo}`);
+    // Verifica se o público-alvo é EXCLUSIVAMENTE médicos (critério rígido do ICP)
+    const isMedicalTarget = expert.publicoAlvo.toLowerCase().includes("médico");
+    const isNonMedicalTarget = expert.publicoAlvo.toLowerCase().includes("empreendedor") ||
+                               expert.publicoAlvo.toLowerCase().includes("digital") ||
+                               expert.publicoAlvo.toLowerCase().includes("geral") ||
+                               expert.publicoAlvo.toLowerCase().includes("consultor");
+    
+    if (isMedicalTarget && !isNonMedicalTarget) {
+      qualificationReasons.push(`✅ Nicho IDEAL: Atende EXCLUSIVAMENTE médicos - ${expert.publicoAlvo}`);
+    } else if (isNonMedicalTarget) {
+      riskFactors.push(`❌ DESQUALIFICADO: Público-alvo NÃO é médico - ${expert.publicoAlvo}`);
+      // Reduz drasticamente o score se não atende médicos
+      expert.score = Math.min(expert.score, 45);
     } else if (expert.nicho !== "Não identificado") {
-      riskFactors.push(`Público-alvo NÃO é médico: ${expert.publicoAlvo}`);
+      riskFactors.push(`⚠️ Público-alvo não claramente definido como médicos: ${expert.publicoAlvo}`);
     } else {
-      riskFactors.push("Nicho não definido claramente");
+      riskFactors.push("❌ Nicho não definido claramente");
     }
 
     if (expert.comunidade && expert.comunidade.membros >= 500) {
