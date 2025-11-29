@@ -83,13 +83,19 @@ const roadmapItems: RoadmapItem[] = [
   {
     id: "6",
     title: "Sistema de Cache Inteligente",
-    description: "Reduzir custos de API e melhorar performance com cache Redis",
-    status: "planned",
+    description: "Reduzir custos de API e melhorar performance com cache em memória",
+    status: "completed",
     category: "improvement",
     technical_details: [
-      "Cache de 24h para dados de perfis",
-      "Invalidação automática em mudanças críticas",
-      "Redis Cloud: US$ 0.00/mês (500MB gratuito)"
+      "✅ Cache em memória (InMemoryCache) implementado",
+      "✅ TTL de 24h para análises de experts",
+      "✅ TTL de 24h para dados de contato",
+      "✅ Invalidação por padrão (regex)",
+      "✅ Limpeza automática a cada 10 minutos",
+      "✅ Endpoints de gerenciamento (/api/cache/stats, /clear, /expert/:handle)",
+      "✅ Interface visual em Settings com stats em tempo real",
+      "✅ Logs detalhados de Cache HIT/MISS",
+      "🔮 Upgrade futuro: Migrar para Redis Cloud se necessário (500MB gratuito)"
     ]
   },
   {
