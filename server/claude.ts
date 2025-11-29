@@ -132,6 +132,20 @@ const analyzeExpertFit = tool(
         autoridade: ["Médico referência em saúde no YouTube", "Milhões de seguidores", "Autor de livros"],
         estruturaVendas: ["Página de vendas", "Lançamentos estruturados", "Parcerias estratégicas"],
         score: 91
+      },
+      "davisoncarvalho": {
+        nome: "Davison Carvalho",
+        nicho: "Vendas e Modelo de Negócios para Médicos",
+        publicoAlvo: "Médicos e profissionais da saúde",
+        seguidores: 21000,
+        infoprodutos: [
+          { nome: "DOC4U Mentoria", tipo: "Mentoria estruturada para médicos", ticketMedio: "R$ 5.000" },
+          { nome: "Programa de Liderança Médica", tipo: "Curso com módulos", ticketMedio: "R$ 2.997" }
+        ],
+        comunidade: { nome: "Comunidade DOC4U", membros: 800 },
+        autoridade: ["Cofundador e CEO @doc4u.mentoria", "Especialista em vendas para médicos", "Mentor de profissionais de saúde"],
+        estruturaVendas: ["Mentoria estruturada", "Página de vendas", "Funil de captação"],
+        score: 88
       }
     };
 
@@ -319,6 +333,15 @@ const getExpertContact = tool(
         tempo_resposta: "7-14 dias úteis",
         melhor_abordagem: "Apenas via assessoria com proposta robusta",
         gatilhos: ["Ciência e evidências", "Público fitness/saúde", "Proposta de grande impacto"]
+      },
+      "davisoncarvalho": {
+        nome: "Davison Carvalho",
+        email_comercial: "contato@doc4u.com.br",
+        assessoria: "Equipe DOC4U",
+        whatsapp_comercial: null,
+        tempo_resposta: "2-4 dias úteis",
+        melhor_abordagem: "Email ou DM mencionando nicho médico e modelo de negócios",
+        gatilhos: ["Soluções para médicos", "Vendas high ticket para saúde", "Parcerias com foco em profissionais de saúde"]
       }
     };
 
