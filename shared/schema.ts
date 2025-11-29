@@ -75,3 +75,29 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
+
+// Expert Rankings
+export const expertRankings = pgTable("expert_rankings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  instagramHandle: text("instagram_handle").notNull(),
+  nome: text("nome").notNull(),
+  nicho: text("nicho"),
+  publicoAlvo: text("publico_alvo"),
+  seguidores: integer("seguidores"),
+  score: integer("score").notNull(),
+  qualified: text("qualified").notNull(),
+  infoprodutos: jsonb("infoprodutos"),
+  comunidade: jsonb("comunidade"),
+  autoridade: jsonb("autoridade"),
+  estruturaVendas: jsonb("estrutura_vendas"),
+  analysisData: jsonb("analysis_data"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertExpertRankingSchema = createInsertSchema(expertRankings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertExpertRanking = z.infer<typeof insertExpertRankingSchema>;
+export type ExpertRanking = typeof expertRankings.$inferSelect;
