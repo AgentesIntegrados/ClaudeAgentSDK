@@ -361,36 +361,57 @@ export async function registerRoutes(
     }
   });
 
-  // File System - Read file contents dynamically
-  app.get("/api/files/content", async (req, res) => {
+  // File System - Get project structure
+  app.get("/api/files", async (req, res) => {
     try {
-      const { path } = req.query;
-      if (!path || typeof path !== "string") {
-        return res.status(400).json({ error: "Path parameter required" });
-      }
-
-      // Security: only allow reading project files
-      const allowedPaths = [
-        "client/src/",
-        "server/",
-        "shared/",
-        "package.json",
-        "tsconfig.json",
-        "README.md",
-        "replit.md"
-      ];
-
-      const isAllowed = allowedPaths.some(allowed => 
-        path.startsWith(allowed) || path === allowed
-      );
-
-      if (!isAllowed) {
-        return res.status(403).json({ error: "Access denied to this path" });
-      }
-
       const fs = await import("fs/promises");
-      const content = await fs.readFile(path, "utf-8");
-      res.json({ path, content });
+      const path = await import("path");
+      
+      async function buildTree(dir: string, basePath = ""): Promise<any[]> {
+        const items: any[] = [];
+        try {
+          const entries = await fs.readdir(dir, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.name.startsWith(".") || entry.name === "node_modules" || entry.name === "dist") {
+              continue;
+            }
+            const fullPath = path.join(basePath, entry.name);
+            if (entry.isDirectory()) {
+              const children = await buildTree(path.join(dir, entry.name), fullPath);
+              items.push({ name: entry.name, type: "folder", path: fullPath, children });
+            } else {
+              items.push({ name: entry.name, type: "file", path: fullPath });
+            }
+          }
+        } catch (e) {}
+        return items.sort((a, b) => {
+          if (a.type === "folder" && b.type !== "folder") return -1;
+          if (a.type !== "folder" && b.type === "folder") return 1;
+          return a.name.localeCompare(b.name);
+        });
+      }
+      
+      const structure = await buildTree(".");
+      res.json(structure);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get project structure" });
+    }
+  });
+
+  // File System - Get file content by path
+  app.get("/api/files/:filename(*)", async (req, res) => {
+    try {
+      const filename = req.params.filename;
+      const allowedPaths = ["client/", "server/", "shared/", "package.json", "tsconfig.json", "README.md", "replit.md"];
+      const isAllowed = allowedPaths.some(allowed => filename.startsWith(allowed) || filename === allowed);
+      
+      if (!isAllowed) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const fs = await import("fs/promises");
+      const content = await fs.readFile(filename, "utf-8");
+      res.json({ path: filename, content });
     } catch (error) {
       res.status(404).json({ error: "File not found" });
     }
