@@ -238,6 +238,25 @@ export default function Validation() {
   return (
     <Layout>
       <div className="max-w-5xl mx-auto space-y-6">
+        {/* Mock Tools Warning */}
+        <Card className="bg-yellow-500/10 border-yellow-500/30">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-yellow-400 mb-1">Ferramentas MCP SDR são SIMULAÇÕES</p>
+                <p className="text-muted-foreground">
+                  <code className="bg-muted px-1 rounded text-xs">analyze_expert_fit</code> e 
+                  <code className="bg-muted px-1 rounded text-xs ml-1">get_expert_contact</code> usam 
+                  dados hardcoded em <code className="bg-muted px-1 rounded text-xs">server/claude.ts</code>. 
+                  O MCP real conectado é o <span className="text-primary">Sequential Thinking</span> (Smithery AI). 
+                  Veja o <a href="/roadmap" className="text-primary underline">Roadmap</a> para detalhes.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

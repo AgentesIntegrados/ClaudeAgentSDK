@@ -16,6 +16,42 @@ interface RoadmapItem {
 
 const roadmapItems: RoadmapItem[] = [
   {
+    id: "mcp-real",
+    title: "MCP Client Sistema Completo",
+    description: "Sistema de conexão com MCP Servers externos já implementado e funcionando",
+    status: "completed",
+    category: "integration",
+    complexity: "complex",
+    technical_details: [
+      "✅ IMPLEMENTADO: Sistema MCP Client funcional",
+      "✅ Sequential Thinking (Smithery AI) - Conectado",
+      "Suporta transportes: HTTP, WebSocket, stdio",
+      "Autenticação: Bearer, Header, Query params",
+      "Gerenciamento de secrets via Replit Secrets",
+      "Descoberta automática de ferramentas",
+      "🔧 server/mcp-manager.ts: Gerencia conexões",
+      "🔧 server/seed-mcp.ts: Servers padrão",
+      "📋 Ferramenta disponível: mcp__sequential_thinking__sequentialthinking"
+    ]
+  },
+  {
+    id: "mock-tools",
+    title: "Ferramentas SDR (MOCK/SIMULAÇÃO)",
+    description: "⚠️ analyze_expert_fit e get_expert_contact são SIMULAÇÕES - NÃO são MCPs reais",
+    status: "in_progress",
+    category: "feature",
+    complexity: "medium",
+    technical_details: [
+      "🟡 STATUS: MOCK - Dados simulados em server/claude.ts",
+      "⚠️ mcp__sdr__analyze_expert_fit: Usa dicionário hardcoded",
+      "⚠️ mcp__sdr__get_expert_contact: Retorna dados fictícios",
+      "📍 Localização: server/claude.ts (linhas 14-350)",
+      "🎯 PRÓXIMO PASSO: Substituir por API real",
+      "Opções: Instagram Graph API, HypeAuditor, Social Blade",
+      "Ver itens 'Integração com Instagram Graph API' abaixo"
+    ]
+  },
+  {
     id: "1",
     title: "Sistema de Análise Hardcoded (PROVISÓRIO)",
     description: "Base de dados local temporária - será removida quando o agente estiver 100% validado",
